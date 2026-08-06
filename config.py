@@ -54,3 +54,8 @@ FONT_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 # ==========================
 
 LAYOUT = "premium"
+
+# Renderer mode
+# Options: "classic" or "premium"
+
+RENDERER_MODE = "premium"
