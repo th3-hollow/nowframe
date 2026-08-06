@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+spotify-env/
+venv/
+.env/
+
+# Test images
+*_test.png
+test_*.png
+player_test.png
+live_spotify_test.png
+clock_test.png
+
+# Runtime files
+*.log
+
+# Spotify cache/auth
+.cache/
+.nowframe_spotify_cache
+
+# Local Spotify credentials
+.spotify_env
+
+# Backups
+*_backup.py
+*_before_*.py
+
+# Test scripts
+*_test.py
+
+# Test images
+*_test.jpg
+*_test.png

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NowFrame</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+img {
+    width: 100%;
+    max-width: 800px;
+}
+</style>
+
+</head>
+
+<body>
+
+<img id="frame" src="live_spotify_test.png">
+
+<script>
+
+setInterval(() => {
+
+    document.getElementById("frame").src =
+        "live_spotify_test.png?t=" + new Date().getTime();
+
+}, 1000);
+
+</script>
+
+</body>
+</html>
