@@ -1,6 +1,8 @@
 import sys
 import time
 
+from PIL import Image
+
 sys.path.append(
     "/root/spotify-display"
 )
@@ -13,13 +15,19 @@ from core.v2.display_engine import (
 )
 
 
-print(
-    "NowFrame starting..."
-)
+print("NowFrame starting...")
 
 
 app = NowFrameApp()
 
+
+# Current image that is actually visible
+# on the physical display.
+
+current_screen = None
+
+
+# Performance counters
 
 last_report = time.monotonic()
 
@@ -29,6 +37,70 @@ region_frames = 0
 full_time = 0.0
 region_time = 0.0
 
+
+# =====================================
+# Song transition
+# =====================================
+
+def crossfade(
+    old_frame,
+    new_frame,
+    steps=6
+):
+
+    if old_frame is None:
+
+        show_frame(
+            new_frame
+        )
+
+        return
+
+
+    print("Song crossfade")
+
+
+    for step in range(
+        1,
+        steps + 1
+    ):
+
+        t = (
+            step / steps
+        )
+
+
+        # Smoothstep easing.
+        #
+        # Less mechanical than a
+        # completely linear fade.
+
+        alpha = (
+            t
+            * t
+            * (
+                3.0
+                -
+                2.0 * t
+            )
+        )
+
+
+        blended = Image.blend(
+            old_frame,
+            new_frame,
+            alpha
+        )
+
+
+        show_frame(
+            blended
+        )
+
+
+# =====================================
+# Main loop
+# =====================================
 
 while True:
 
@@ -49,11 +121,39 @@ while True:
             continue
 
 
+        # =================================
+        # FULL FRAME
+        # =================================
+
         if update["type"] == "full":
 
-            show_frame(
-                update["image"]
+            new_frame = update["image"]
+
+
+            if (
+                update.get("transition")
+                == "song"
+                and
+                current_screen is not None
+            ):
+
+                crossfade(
+                    current_screen,
+                    new_frame,
+                    steps=6
+                )
+
+            else:
+
+                show_frame(
+                    new_frame
+                )
+
+
+            current_screen = (
+                new_frame.copy()
             )
+
 
             full_frames += 1
 
@@ -63,13 +163,38 @@ while True:
             )
 
 
+        # =================================
+        # PARTIAL REGION
+        # =================================
+
         elif update["type"] == "region":
 
+            region = update["image"]
+
+            x = update["x"]
+            y = update["y"]
+
+
             show_region(
-                update["image"],
-                update["x"],
-                update["y"]
+                region,
+                x,
+                y
             )
+
+
+            # Keep our in-memory copy in
+            # sync with the real display.
+
+            if current_screen is not None:
+
+                current_screen.paste(
+                    region,
+                    (
+                        x,
+                        y
+                    )
+                )
+
 
             region_frames += 1
 
@@ -78,6 +203,10 @@ while True:
                 - start
             )
 
+
+        # =================================
+        # Performance report
+        # =================================
 
         now = time.monotonic()
 

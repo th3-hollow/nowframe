@@ -40,9 +40,7 @@ class NowFrameApp:
 
         if RENDERER_MODE == "premium":
 
-            print(
-                "Using Premium Renderer"
-            )
+            print("Using Premium Renderer")
 
             self.renderer = PremiumRenderer(
                 SCREEN_WIDTH,
@@ -53,9 +51,7 @@ class NowFrameApp:
 
         else:
 
-            print(
-                "Using Classic Renderer"
-            )
+            print("Using Classic Renderer")
 
             self.renderer = Renderer()
 
@@ -70,23 +66,40 @@ class NowFrameApp:
         spotify_data = self.spotify.get_data()
 
 
-        # ==========================
+        # =================================
         # SPOTIFY PLAYING
-        # ==========================
+        # =================================
 
         if spotify_data["playing"]:
 
             track_key = (
                 spotify_data["title"],
                 spotify_data["artist"],
-                spotify_data.get(
-                    "album_url"
-                )
+                spotify_data.get("album_url")
+            )
+
+
+            was_playing = (
+                self.last_mode == "playing"
+            )
+
+
+            track_changed = (
+                was_playing
+                and
+                self.last_track_key is not None
+                and
+                track_key != self.last_track_key
+            )
+
+
+            mode_changed = (
+                self.last_mode != "playing"
             )
 
 
             full_update = (
-                self.last_mode != "playing"
+                mode_changed
                 or
                 track_key != self.last_track_key
             )
@@ -96,9 +109,14 @@ class NowFrameApp:
             self.last_track_key = track_key
 
 
+            # ---------------------------------
+            # Fast progress-only update
+            # ---------------------------------
+
             if (
                 RENDERER_MODE == "premium"
-                and not full_update
+                and
+                not full_update
             ):
 
                 region = (
@@ -117,9 +135,14 @@ class NowFrameApp:
                         "type": "region",
                         "image": region,
                         "x": x,
-                        "y": y
+                        "y": y,
+                        "transition": None
                     }
 
+
+            # ---------------------------------
+            # Full Spotify render
+            # ---------------------------------
 
             frame = self.renderer.create_frame()
 
@@ -141,15 +164,24 @@ class NowFrameApp:
                 )
 
 
+            transition = None
+
+
+            if track_changed:
+
+                transition = "song"
+
+
             return {
                 "type": "full",
-                "image": frame
+                "image": frame,
+                "transition": transition
             }
 
 
-        # ==========================
+        # =================================
         # CLOCK / PAUSED
-        # ==========================
+        # =================================
 
         clock_data = self.clock.get_data()
 
@@ -179,7 +211,8 @@ class NowFrameApp:
 
         return {
             "type": "full",
-            "image": frame
+            "image": frame,
+            "transition": None
         }
 
 
