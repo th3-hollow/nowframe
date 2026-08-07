@@ -8,7 +8,6 @@ from PIL import (
 
 from layouts.premium import PremiumLayout
 from core.v2.cache import BackgroundCache
-from core.v2.colors import ColorExtractor
 
 
 class PremiumRenderer:
@@ -30,7 +29,7 @@ class PremiumRenderer:
         )
 
         self.cache = BackgroundCache()
-        self.colors = ColorExtractor()
+
 
         self.title_font = ImageFont.truetype(
             font_bold,
@@ -47,10 +46,13 @@ class PremiumRenderer:
             120
         )
 
+
         self.base_frame = None
+
 
         self.bar_width = 1100
         self.bar_height = 18
+
 
         self.album_size = 300
         self.album_radius = 28
@@ -68,9 +70,15 @@ class PremiumRenderer:
         )
 
 
-    def draw_clock(self, image, data):
+    def draw_clock(
+        self,
+        image,
+        data
+    ):
 
-        draw = ImageDraw.Draw(image)
+        draw = ImageDraw.Draw(
+            image
+        )
 
         draw.text(
             (
@@ -88,17 +96,22 @@ class PremiumRenderer:
 
     def draw_album_art(
         self,
-        frame,
-        album_path
+        frame
     ):
 
         try:
 
-            album = Image.open(
-                album_path
-            ).convert("RGB")
+            if self.cache.album_image is None:
+                return
+
+
+            album = (
+                self.cache.album_image.copy()
+            )
+
 
             size = self.album_size
+
 
             album = ImageOps.fit(
                 album,
@@ -109,6 +122,7 @@ class PremiumRenderer:
                 method=Image.Resampling.LANCZOS
             )
 
+
             x = (
                 self.width - size
             ) // 2
@@ -117,22 +131,23 @@ class PremiumRenderer:
 
 
             # =========================
-            # Album glow color
+            # Glow color
             # =========================
 
-            palette = self.colors.get_colors(
-                album_path,
-                count=3
+            palette = (
+                self.cache.palette
+                or
+                [(100, 100, 100)]
             )
+
 
             glow_color = palette[0]
 
-            # Prevent very bright album colors
-            # from producing an overpowering halo.
 
             max_channel = max(
                 glow_color
             )
+
 
             if max_channel > 0:
 
@@ -148,27 +163,47 @@ class PremiumRenderer:
 
 
             # =========================
-            # Soft colored glow
+            # LOCAL glow
+            #
+            # Previously this was a
+            # 1920x1080 blurred image.
+            #
+            # Now only ~540x540.
             # =========================
+
+            glow_margin = 120
+
+            glow_size = (
+                size
+                +
+                glow_margin * 2
+            )
+
 
             glow_layer = Image.new(
                 "RGBA",
-                frame.size,
+                (
+                    glow_size,
+                    glow_size
+                ),
                 (0, 0, 0, 0)
             )
+
 
             glow_draw = ImageDraw.Draw(
                 glow_layer
             )
 
+
             glow_padding = 35
+
 
             glow_draw.rounded_rectangle(
                 (
-                    x - glow_padding,
-                    y - glow_padding,
-                    x + size + glow_padding,
-                    y + size + glow_padding
+                    glow_margin - glow_padding,
+                    glow_margin - glow_padding,
+                    glow_margin + size + glow_padding,
+                    glow_margin + size + glow_padding
                 ),
                 radius=55,
                 fill=(
@@ -179,39 +214,58 @@ class PremiumRenderer:
                 )
             )
 
+
             glow_layer = glow_layer.filter(
                 ImageFilter.GaussianBlur(
                     55
                 )
             )
 
+
             frame.paste(
                 glow_layer,
-                (0, 0),
+                (
+                    x - glow_margin,
+                    y - glow_margin
+                ),
                 glow_layer
             )
 
 
             # =========================
-            # Dark shadow
+            # LOCAL shadow
             # =========================
+
+            shadow_margin = 55
+
+            shadow_size = (
+                size
+                +
+                shadow_margin * 2
+            )
+
 
             shadow_layer = Image.new(
                 "RGBA",
-                frame.size,
+                (
+                    shadow_size,
+                    shadow_size
+                ),
                 (0, 0, 0, 0)
             )
+
 
             shadow_draw = ImageDraw.Draw(
                 shadow_layer
             )
 
+
             shadow_draw.rounded_rectangle(
                 (
-                    x + 10,
-                    y + 14,
-                    x + size + 10,
-                    y + size + 14
+                    shadow_margin + 10,
+                    shadow_margin + 14,
+                    shadow_margin + size + 10,
+                    shadow_margin + size + 14
                 ),
                 radius=self.album_radius,
                 fill=(
@@ -222,21 +276,26 @@ class PremiumRenderer:
                 )
             )
 
+
             shadow_layer = shadow_layer.filter(
                 ImageFilter.GaussianBlur(
                     20
                 )
             )
 
+
             frame.paste(
                 shadow_layer,
-                (0, 0),
+                (
+                    x - shadow_margin,
+                    y - shadow_margin
+                ),
                 shadow_layer
             )
 
 
             # =========================
-            # Rounded album corners
+            # Rounded album
             # =========================
 
             mask = Image.new(
@@ -248,9 +307,11 @@ class PremiumRenderer:
                 0
             )
 
+
             mask_draw = ImageDraw.Draw(
                 mask
             )
+
 
             mask_draw.rounded_rectangle(
                 (
@@ -262,6 +323,7 @@ class PremiumRenderer:
                 radius=self.album_radius,
                 fill=255
             )
+
 
             frame.paste(
                 album,
@@ -293,6 +355,7 @@ class PremiumRenderer:
             image
         )
 
+
         progress = max(
             0.0,
             min(
@@ -300,6 +363,7 @@ class PremiumRenderer:
                 progress
             )
         )
+
 
         draw.rounded_rectangle(
             (
@@ -312,9 +376,13 @@ class PremiumRenderer:
             fill=(65, 65, 65)
         )
 
+
         filled_width = int(
-            self.bar_width * progress
+            self.bar_width
+            *
+            progress
         )
+
 
         if filled_width > 0:
 
@@ -336,11 +404,14 @@ class PremiumRenderer:
     ):
 
         if self.base_frame is None:
+
             return None
+
 
         bar_x, bar_y = (
             self.layout.progress_position()
         )
+
 
         region = self.base_frame.crop(
             (
@@ -351,12 +422,14 @@ class PremiumRenderer:
             )
         )
 
+
         self.draw_progress(
             region,
             progress,
             0,
             0
         )
+
 
         return region
 
@@ -371,6 +444,7 @@ class PremiumRenderer:
 
         frame = self.create_frame()
 
+
         background = self.cache.generate(
             album_path,
             (
@@ -378,6 +452,7 @@ class PremiumRenderer:
                 self.height
             )
         )
+
 
         if background is not None:
 
@@ -387,11 +462,11 @@ class PremiumRenderer:
             )
 
 
-        # Album artwork
+        # Album art uses the SAME cached
+        # image + palette as the background.
 
         self.draw_album_art(
-            frame,
-            album_path
+            frame
         )
 
 
@@ -400,10 +475,6 @@ class PremiumRenderer:
         )
 
 
-        # =========================
-        # Title
-        # =========================
-
         draw.text(
             (
                 self.width // 2,
@@ -411,14 +482,14 @@ class PremiumRenderer:
             ),
             title,
             font=self.title_font,
-            fill=(255, 255, 255),
+            fill=(
+                255,
+                255,
+                255
+            ),
             anchor="mm"
         )
 
-
-        # =========================
-        # Artist
-        # =========================
 
         draw.text(
             (
@@ -427,19 +498,24 @@ class PremiumRenderer:
             ),
             artist,
             font=self.artist_font,
-            fill=(205, 205, 205),
+            fill=(
+                205,
+                205,
+                205
+            ),
             anchor="mm"
         )
 
 
-        # Save screen without progress
-
-        self.base_frame = frame.copy()
+        self.base_frame = (
+            frame.copy()
+        )
 
 
         bar_x, bar_y = (
             self.layout.progress_position()
         )
+
 
         self.draw_progress(
             frame,
@@ -447,5 +523,6 @@ class PremiumRenderer:
             bar_x,
             bar_y
         )
+
 
         return frame

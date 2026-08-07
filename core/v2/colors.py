@@ -17,21 +17,45 @@ class ColorExtractor:
                 image_path
             ).convert("RGB")
 
-
-            image = image.resize(
-                (100, 100)
+            return self.get_colors_from_image(
+                image,
+                count
             )
 
+        except Exception as e:
+
+            print(
+                "Color extraction error:",
+                e
+            )
+
+            return [
+                (20, 20, 20)
+            ] * count
+
+
+    def get_colors_from_image(
+        self,
+        image,
+        count=5
+    ):
+
+        try:
+
+            image = image.copy()
+
+            image.thumbnail(
+                (100, 100),
+                Image.Resampling.BILINEAR
+            )
 
             pixels = list(
                 image.getdata()
             )
 
-
             colors = Counter(
                 pixels
             )
-
 
             candidates = []
 
@@ -40,30 +64,34 @@ class ColorExtractor:
 
                 r, g, b = color
 
-
                 rf = r / 255.0
                 gf = g / 255.0
                 bf = b / 255.0
 
-
-                hue, saturation, brightness = colorsys.rgb_to_hsv(
-                    rf,
-                    gf,
-                    bf
+                hue, saturation, brightness = (
+                    colorsys.rgb_to_hsv(
+                        rf,
+                        gf,
+                        bf
+                    )
                 )
 
-
                 if brightness < 0.035:
-
                     continue
-
 
                 score = (
                     amount
-                    * (1.0 + saturation * 2.0)
-                    * (0.5 + brightness)
+                    * (
+                        1.0
+                        +
+                        saturation * 2.0
+                    )
+                    * (
+                        0.5
+                        +
+                        brightness
+                    )
                 )
-
 
                 candidates.append(
                     (
@@ -77,14 +105,12 @@ class ColorExtractor:
                 reverse=True
             )
 
-
             palette = []
 
 
             for score, color in candidates:
 
                 r, g, b = color
-
 
                 too_similar = False
 
@@ -93,18 +119,17 @@ class ColorExtractor:
 
                     er, eg, eb = existing
 
-
                     distance = (
                         abs(r - er)
-                        + abs(g - eg)
-                        + abs(b - eb)
+                        +
+                        abs(g - eg)
+                        +
+                        abs(b - eb)
                     )
-
 
                     if distance < 45:
 
                         too_similar = True
-
                         break
 
 
@@ -116,7 +141,6 @@ class ColorExtractor:
 
 
                 if len(palette) >= count:
-
                     break
 
 
@@ -143,7 +167,6 @@ class ColorExtractor:
                 "Color extraction error:",
                 e
             )
-
 
             return [
                 (20, 20, 20)

@@ -17,38 +17,31 @@ class BackgroundCache:
 
         self.last_album = None
         self.last_modified = None
+
         self.background = None
+        self.album_image = None
+        self.palette = None
 
         self.colors = ColorExtractor()
 
 
-    def add_rgb565_dither(self, image):
-
-        """
-        Add extremely subtle noise before RGB565 conversion.
-
-        RGB565 has relatively large color steps:
-        R = 5 bits
-        G = 6 bits
-        B = 5 bits
-
-        Tiny noise helps break visible gradient bands
-        without making the image look grainy.
-        """
+    def add_rgb565_dither(
+        self,
+        image
+    ):
 
         array = np.asarray(
             image,
             dtype=np.int16
         ).copy()
 
-        height, width, channels = array.shape
+        height, width, channels = (
+            array.shape
+        )
 
         rng = np.random.default_rng(
             12345
         )
-
-        # Red and blue have larger RGB565 steps,
-        # so they receive slightly stronger dithering.
 
         red_noise = rng.integers(
             -4,
@@ -86,13 +79,18 @@ class BackgroundCache:
         )
 
 
-    def generate(self, album_path, size):
+    def generate(
+        self,
+        album_path,
+        size
+    ):
 
         try:
 
             modified = os.path.getmtime(
                 album_path
             )
+
 
             if (
                 album_path == self.last_album
@@ -108,46 +106,45 @@ class BackgroundCache:
             )
 
 
-            # =====================================
-            # Read album palette
-            # =====================================
+            # =========================
+            # Load album ONCE
+            # =========================
 
-            palette = self.colors.get_colors(
-                album_path,
-                count=5
+            album = Image.open(
+                album_path
+            ).convert("RGB")
+
+            self.album_image = (
+                album.copy()
+            )
+
+
+            # =========================
+            # Extract palette ONCE
+            # =========================
+
+            self.palette = (
+                self.colors.get_colors_from_image(
+                    album,
+                    count=5
+                )
             )
 
             print(
                 "Album palette:",
-                palette
+                self.palette
             )
 
 
-            # =====================================
-            # Work at medium resolution
-            #
-            # 320x180 was contributing to the
-            # large contour-like shapes.
-            #
-            # 640x360 is still inexpensive because
-            # this runs only when the album changes.
-            # =====================================
+            # =========================
+            # Background
+            # =========================
 
             work_size = (
                 640,
                 360
             )
 
-
-            album = Image.open(
-                album_path
-            ).convert(
-                "RGB"
-            )
-
-
-            # Fill the entire 16:9 frame naturally
-            # using the actual album artwork.
 
             background = ImageOps.fit(
                 album,
@@ -156,20 +153,12 @@ class BackgroundCache:
             )
 
 
-            # =====================================
-            # Blur the actual artwork
-            # =====================================
-
             background = background.filter(
                 ImageFilter.GaussianBlur(
                     32
                 )
             )
 
-
-            # =====================================
-            # Slightly enrich album colors
-            # =====================================
 
             background = ImageEnhance.Color(
                 background
@@ -178,22 +167,12 @@ class BackgroundCache:
             )
 
 
-            # Slight contrast boost keeps the
-            # blurred background from looking flat.
-
             background = ImageEnhance.Contrast(
                 background
             ).enhance(
                 1.08
             )
 
-
-            # =====================================
-            # Darken
-            #
-            # We want atmosphere, not competition
-            # with the album art and text.
-            # =====================================
 
             background = ImageEnhance.Brightness(
                 background
@@ -202,13 +181,6 @@ class BackgroundCache:
             )
 
 
-            # =====================================
-            # Soft second blur
-            #
-            # Helps remove remaining structures
-            # after contrast/color processing.
-            # =====================================
-
             background = background.filter(
                 ImageFilter.GaussianBlur(
                     10
@@ -216,31 +188,22 @@ class BackgroundCache:
             )
 
 
-            # =====================================
-            # Upscale cleanly to 1920x1080
-            # =====================================
+            # Bilinear is plenty after such
+            # a heavy blur and is cheaper
+            # than bicubic.
 
             background = background.resize(
                 size,
-                Image.Resampling.BICUBIC
+                Image.Resampling.BILINEAR
             )
 
 
-            # =====================================
-            # RGB565-friendly dithering
-            #
-            # Do this AFTER upscaling so the dither
-            # exists at the physical pixel level.
-            # =====================================
-
-            background = self.add_rgb565_dither(
-                background
+            background = (
+                self.add_rgb565_dither(
+                    background
+                )
             )
 
-
-            # =====================================
-            # Cache
-            # =====================================
 
             self.background = background
 
