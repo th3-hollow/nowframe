@@ -5,7 +5,6 @@ import requests
 import spotipy
 
 from PIL import Image
-
 from spotipy.oauth2 import SpotifyOAuth
 
 from config import (
@@ -55,6 +54,17 @@ class SpotifyPlugin:
             time.monotonic()
         )
 
+        # Spotify/network health tracking
+
+        self.spotify_available = True
+
+        self.last_error_log = 0.0
+
+        # Avoid printing the same network
+        # error every two seconds.
+
+        self.error_log_interval = 30.0
+
 
     def download_album(
         self,
@@ -80,8 +90,6 @@ class SpotifyPlugin:
             response.raise_for_status()
 
 
-            # Write new image to temporary file first.
-
             with open(
                 temp_path,
                 "wb"
@@ -92,18 +100,12 @@ class SpotifyPlugin:
                 )
 
 
-            # Validate that Pillow can actually
-            # open and understand the image.
-
             with Image.open(
                 temp_path
             ) as image:
 
                 image.verify()
 
-
-            # Replace the old artwork only after
-            # the new image has been validated.
 
             os.replace(
                 temp_path,
@@ -126,9 +128,6 @@ class SpotifyPlugin:
             )
 
 
-            # Remove incomplete temporary file,
-            # but preserve the last valid album.
-
             try:
 
                 if os.path.exists(
@@ -144,6 +143,30 @@ class SpotifyPlugin:
                 pass
 
 
+    def log_spotify_error(
+        self,
+        error
+    ):
+
+        now = time.monotonic()
+
+
+        if (
+            now
+            -
+            self.last_error_log
+            >=
+            self.error_log_interval
+        ):
+
+            print(
+                "Spotify unavailable:",
+                error
+            )
+
+            self.last_error_log = now
+
+
     def poll_spotify(self):
 
         try:
@@ -153,12 +176,29 @@ class SpotifyPlugin:
             )
 
 
+            # If Spotify was previously unavailable
+            # and now responds again, report recovery.
+
+            if not self.spotify_available:
+
+                print(
+                    "Spotify connection restored"
+                )
+
+
+            self.spotify_available = True
+
+
         except Exception as e:
 
-            print(
-                "Spotify API error:",
+            self.spotify_available = False
+
+            self.log_spotify_error(
                 e
             )
+
+            # Keep the last valid cached_data.
+            # Do not replace it with empty data.
 
             return
 
@@ -346,6 +386,11 @@ class SpotifyPlugin:
             progress_ms
             /
             self.duration_ms
+        )
+
+
+        data["spotify_available"] = (
+            self.spotify_available
         )
 
 
