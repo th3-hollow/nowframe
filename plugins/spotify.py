@@ -1,4 +1,6 @@
+import os
 import time
+
 import requests
 import spotipy
 
@@ -6,16 +8,20 @@ from spotipy.oauth2 import SpotifyOAuth
 
 from config import (
     SPOTIFY_POLL_INTERVAL,
-    SPOTIFY_REQUEST_TIMEOUT
+    SPOTIFY_REQUEST_TIMEOUT,
+    RUNTIME_CACHE_DIR,
+    ALBUM_CACHE_PATH
 )
-
-
-ALBUM_PATH = "assets/images/album.jpg"
 
 
 class SpotifyPlugin:
 
     def __init__(self):
+
+        os.makedirs(
+            RUNTIME_CACHE_DIR,
+            exist_ok=True
+        )
 
         self.spotify = spotipy.Spotify(
             auth_manager=SpotifyOAuth(
@@ -38,16 +44,24 @@ class SpotifyPlugin:
         # Last time Spotify API was queried
         self.last_poll = 0.0
 
-        # Poll Spotify every 2 seconds
-        self.poll_interval = SPOTIFY_POLL_INTERVAL
+        # Poll interval from config
+        self.poll_interval = (
+            SPOTIFY_POLL_INTERVAL
+        )
 
         # Used for smooth local progress
         self.progress_ms = 0
         self.duration_ms = 1
-        self.progress_timestamp = time.monotonic()
+
+        self.progress_timestamp = (
+            time.monotonic()
+        )
 
 
-    def download_album(self, url):
+    def download_album(
+        self,
+        url
+    ):
 
         if url == self.last_image:
             return
@@ -62,14 +76,20 @@ class SpotifyPlugin:
             response.raise_for_status()
 
             with open(
-                ALBUM_PATH,
+                ALBUM_CACHE_PATH,
                 "wb"
             ) as f:
-                f.write(response.content)
+
+                f.write(
+                    response.content
+                )
 
             self.last_image = url
 
-            print("Album art updated")
+            print(
+                "Album art updated"
+            )
+
 
         except Exception as e:
 
@@ -83,7 +103,10 @@ class SpotifyPlugin:
 
         try:
 
-            current = self.spotify.current_playback()
+            current = (
+                self.spotify.current_playback()
+            )
+
 
         except Exception as e:
 
@@ -98,7 +121,11 @@ class SpotifyPlugin:
         now = time.monotonic()
 
 
-        if not current or not current.get("item"):
+        if (
+            not current
+            or
+            not current.get("item")
+        ):
 
             self.cached_data = {
                 "playing": False,
@@ -110,6 +137,7 @@ class SpotifyPlugin:
 
             self.progress_ms = 0
             self.duration_ms = 1
+
             self.progress_timestamp = now
 
             return
@@ -117,10 +145,14 @@ class SpotifyPlugin:
 
         track = current["item"]
 
-        images = track["album"].get(
-            "images",
-            []
+
+        images = (
+            track["album"].get(
+                "images",
+                []
+            )
         )
+
 
         image_url = (
             images[0]["url"]
@@ -136,13 +168,27 @@ class SpotifyPlugin:
             )
 
 
-        if track["id"] != self.last_track:
+        if (
+            track["id"]
+            !=
+            self.last_track
+        ):
 
-            print("Now playing:")
-            print(track["name"])
-            print(track["artists"][0]["name"])
+            print(
+                "Now playing:"
+            )
 
-            self.last_track = track["id"]
+            print(
+                track["name"]
+            )
+
+            print(
+                track["artists"][0]["name"]
+            )
+
+            self.last_track = (
+                track["id"]
+            )
 
 
         self.progress_ms = (
@@ -152,6 +198,7 @@ class SpotifyPlugin:
             or 0
         )
 
+
         self.duration_ms = max(
             track.get(
                 "duration_ms",
@@ -159,6 +206,7 @@ class SpotifyPlugin:
             ),
             1
         )
+
 
         self.progress_timestamp = now
 
@@ -172,13 +220,21 @@ class SpotifyPlugin:
                 )
             ),
 
-            "title": track["name"],
+            "title": (
+                track["name"]
+            ),
 
-            "artist": track["artists"][0]["name"],
+            "artist": (
+                track["artists"][0]["name"]
+            ),
 
-            "album": track["album"]["name"],
+            "album": (
+                track["album"]["name"]
+            ),
 
-            "album_url": image_url
+            "album_url": (
+                image_url
+            )
         }
 
 
@@ -187,12 +243,12 @@ class SpotifyPlugin:
         now = time.monotonic()
 
 
-        # Only query Spotify periodically.
-
         if (
             self.cached_data is None
             or
-            now - self.last_poll >= self.poll_interval
+            now - self.last_poll
+            >=
+            self.poll_interval
         ):
 
             self.poll_spotify()
@@ -212,22 +268,27 @@ class SpotifyPlugin:
             }
 
 
-        data = self.cached_data.copy()
+        data = (
+            self.cached_data.copy()
+        )
 
 
-        # Smoothly advance progress locally
-        # between Spotify API updates.
-
-        progress_ms = self.progress_ms
+        progress_ms = (
+            self.progress_ms
+        )
 
 
         if data["playing"]:
 
             elapsed_ms = (
-                now - self.progress_timestamp
+                now
+                -
+                self.progress_timestamp
             ) * 1000.0
 
-            progress_ms += elapsed_ms
+            progress_ms += (
+                elapsed_ms
+            )
 
 
         progress_ms = min(

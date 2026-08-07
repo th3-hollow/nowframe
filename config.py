@@ -30,6 +30,12 @@ SPOTIFY_POLL_INTERVAL = 2.0
 
 SPOTIFY_REQUEST_TIMEOUT = 10
 
+# Runtime cache directory.
+# Temporary artwork and other generated Spotify
+# assets are stored here instead of inside Git.
+
+RUNTIME_CACHE_DIR = "/tmp/nowframe"
+ALBUM_CACHE_PATH = "/tmp/nowframe/album.jpg"
 
 # ==========================
 # IDLE / CLOCK

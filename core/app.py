@@ -13,7 +13,8 @@ from config import (
     FONT_REGULAR,
     FONT_BOLD,
     PAUSE_GRACE_SECONDS,
-    CLOCK_ENABLED
+    CLOCK_ENABLED,
+    ALBUM_CACHE_PATH
 )
 
 from core.renderer import Renderer
@@ -78,14 +79,18 @@ class NowFrameApp:
         # after playback pauses.
         # =================================
 
-        self.pause_grace_seconds = PAUSE_GRACE_SECONDS
+        self.pause_grace_seconds = (
+            PAUSE_GRACE_SECONDS
+        )
 
         self.pause_started = None
 
 
     def create_update(self):
 
-        spotify_data = self.spotify.get_data()
+        spotify_data = (
+            self.spotify.get_data()
+        )
 
         now = time.monotonic()
 
@@ -105,43 +110,61 @@ class NowFrameApp:
             track_key = (
                 spotify_data["title"],
                 spotify_data["artist"],
-                spotify_data.get("album_url")
+                spotify_data.get(
+                    "album_url"
+                )
             )
 
 
             was_playing = (
-                self.last_mode == "playing"
+                self.last_mode
+                ==
+                "playing"
             )
 
 
             was_clock = (
-                self.last_mode == "clock"
+                self.last_mode
+                ==
+                "clock"
             )
 
 
             track_changed = (
                 was_playing
                 and
-                self.last_track_key is not None
+                self.last_track_key
+                is not None
                 and
-                track_key != self.last_track_key
+                track_key
+                !=
+                self.last_track_key
             )
 
 
             mode_changed = (
-                self.last_mode != "playing"
+                self.last_mode
+                !=
+                "playing"
             )
 
 
             full_update = (
                 mode_changed
                 or
-                track_key != self.last_track_key
+                track_key
+                !=
+                self.last_track_key
             )
 
 
-            self.last_mode = "playing"
-            self.last_track_key = track_key
+            self.last_mode = (
+                "playing"
+            )
+
+            self.last_track_key = (
+                track_key
+            )
 
 
             # ---------------------------------
@@ -149,14 +172,18 @@ class NowFrameApp:
             # ---------------------------------
 
             if (
-                RENDERER_MODE == "premium"
+                RENDERER_MODE
+                ==
+                "premium"
                 and
                 not full_update
             ):
 
                 region = (
                     self.renderer.render_progress_region(
-                        spotify_data["progress"]
+                        spotify_data[
+                            "progress"
+                        ]
                     )
                 )
 
@@ -179,23 +206,39 @@ class NowFrameApp:
             # Full Spotify render
             # ---------------------------------
 
-            frame = self.renderer.create_frame()
+            frame = (
+                self.renderer.create_frame()
+            )
 
 
-            if RENDERER_MODE == "premium":
+            if (
+                RENDERER_MODE
+                ==
+                "premium"
+            ):
 
-                frame = self.renderer.render(
-                    "assets/images/album.jpg",
-                    spotify_data["title"],
-                    spotify_data["artist"],
-                    spotify_data["progress"]
+                frame = (
+                    self.renderer.render(
+                        ALBUM_CACHE_PATH,
+                        spotify_data[
+                            "title"
+                        ],
+                        spotify_data[
+                            "artist"
+                        ],
+                        spotify_data[
+                            "progress"
+                        ]
+                    )
                 )
 
             else:
 
-                frame = self.renderer.draw_spotify(
-                    frame,
-                    spotify_data
+                frame = (
+                    self.renderer.draw_spotify(
+                        frame,
+                        spotify_data
+                    )
                 )
 
 
@@ -227,10 +270,11 @@ class NowFrameApp:
         # NOT PLAYING
         # =================================
 
-        # If we were just playing, begin the
-        # 10-second pause grace period.
-
-        if self.last_mode == "playing":
+        if (
+            self.last_mode
+            ==
+            "playing"
+        ):
 
             if self.pause_started is None:
 
@@ -238,12 +282,15 @@ class NowFrameApp:
 
                 print(
                     f"Playback paused - starting "
-                    f"{self.pause_grace_seconds:g} second grace period"
+                    f"{self.pause_grace_seconds:g} "
+                    f"second grace period"
                 )
 
 
             paused_for = (
-                now - self.pause_started
+                now
+                -
+                self.pause_started
             )
 
 
@@ -270,42 +317,63 @@ class NowFrameApp:
         # =================================
 
         if not CLOCK_ENABLED:
+
             return None
 
-        clock_data = self.clock.get_data()
 
-        clock_text = clock_data["time"]
+        clock_data = (
+            self.clock.get_data()
+        )
+
+        clock_text = (
+            clock_data["time"]
+        )
 
 
-        # Once already on the clock, only
-        # redraw when the displayed minute
-        # actually changes.
+        # Once already on the clock,
+        # only redraw when the displayed
+        # minute changes.
 
         if (
-            self.last_mode == "clock"
+            self.last_mode
+            ==
+            "clock"
             and
-            clock_text == self.last_clock_text
+            clock_text
+            ==
+            self.last_clock_text
         ):
 
             return None
 
 
         entering_clock = (
-            self.last_mode != "clock"
+            self.last_mode
+            !=
+            "clock"
         )
 
 
-        self.last_mode = "clock"
-        self.last_clock_text = clock_text
+        self.last_mode = (
+            "clock"
+        )
+
+        self.last_clock_text = (
+            clock_text
+        )
 
         self.pause_started = None
 
 
-        frame = self.renderer.create_frame()
+        frame = (
+            self.renderer.create_frame()
+        )
 
-        frame = self.renderer.draw_clock(
-            frame,
-            clock_data
+        frame = (
+            self.renderer.draw_clock(
+                frame,
+                clock_data
+            )
         )
 
 
@@ -322,10 +390,14 @@ class NowFrameApp:
 
     def create_frame(self):
 
-        update = self.create_update()
+        update = (
+            self.create_update()
+        )
 
         if update is None:
 
-            return self.renderer.create_frame()
+            return (
+                self.renderer.create_frame()
+            )
 
         return update["image"]
