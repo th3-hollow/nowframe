@@ -6,7 +6,6 @@ from core.v2.cache import BackgroundCache
 
 class PremiumRenderer:
 
-
     def __init__(
         self,
         width,
@@ -25,7 +24,6 @@ class PremiumRenderer:
 
         self.cache = BackgroundCache()
 
-
         self.title_font = ImageFont.truetype(
             font_bold,
             45
@@ -34,6 +32,11 @@ class PremiumRenderer:
         self.artist_font = ImageFont.truetype(
             font_regular,
             28
+        )
+
+        self.clock_font = ImageFont.truetype(
+            font_bold,
+            120
         )
 
 
@@ -45,9 +48,26 @@ class PremiumRenderer:
                 self.width,
                 self.height
             ),
-            (0,0,0)
+            (0, 0, 0)
         )
-      
+
+
+    def draw_clock(self, image, data):
+
+        draw = ImageDraw.Draw(image)
+
+        draw.text(
+            (
+                self.width // 2,
+                self.height // 2
+            ),
+            data["time"],
+            font=self.clock_font,
+            fill="white",
+            anchor="mm"
+        )
+
+        return image
 
 
     def render(
@@ -58,15 +78,7 @@ class PremiumRenderer:
         progress
     ):
 
-        frame = Image.new(
-            "RGB",
-            (
-                self.width,
-                self.height
-            ),
-            (0,0,0)
-        )
-
+        frame = self.create_frame()
 
         background = self.cache.generate(
             album_path,
@@ -76,50 +88,49 @@ class PremiumRenderer:
             )
         )
 
-
-        if background:
+        if background is not None:
 
             frame.paste(
                 background,
-                (0,0)
+                (0, 0)
             )
-
 
         draw = ImageDraw.Draw(frame)
 
+        try:
 
-        album = Image.open(
-            album_path
-        ).convert(
-            "RGB"
-        )
+            album = Image.open(
+                album_path
+            ).convert("RGB")
 
+            size = 260
 
-        size = 260
+            album = ImageOps.fit(
+                album,
+                (
+                    size,
+                    size
+                )
+            )
 
-
-        album = ImageOps.fit(
-            album,
-            (
-                size,
+            x, y = self.layout.album_position(
                 size
             )
-        )
 
-
-        x,y = self.layout.album_position(
-            size
-        )
-
-
-        frame.paste(
-            album,
-            (
-                x,
-                y
+            frame.paste(
+                album,
+                (
+                    x,
+                    y
+                )
             )
-        )
 
+        except Exception as e:
+
+            print(
+                "Album render error:",
+                e
+            )
 
         draw.text(
             self.layout.title_position(),
@@ -129,41 +140,53 @@ class PremiumRenderer:
             anchor="mm"
         )
 
-
         draw.text(
             self.layout.artist_position(),
             artist,
             font=self.artist_font,
-            fill=(190,190,190),
+            fill=(190, 190, 190),
             anchor="mm"
         )
 
-
         bar_x, bar_y = self.layout.progress_position()
 
+        bar_width = 1100
+        bar_height = 18
 
         draw.rounded_rectangle(
             (
                 bar_x,
                 bar_y,
-                bar_x + 1100,
-                bar_y + 18
+                bar_x + bar_width,
+                bar_y + bar_height
             ),
             radius=9,
-            fill=(80,80,80)
+            fill=(80, 80, 80)
         )
 
-
-        draw.rounded_rectangle(
-            (
-                bar_x,
-                bar_y,
-                bar_x + int(1100 * progress),
-                bar_y + 18
-            ),
-            radius=9,
-            fill="white"
+        progress = max(
+            0.0,
+            min(
+                1.0,
+                progress
+            )
         )
 
+        filled_width = int(
+            bar_width * progress
+        )
+
+        if filled_width > 0:
+
+            draw.rounded_rectangle(
+                (
+                    bar_x,
+                    bar_y,
+                    bar_x + filled_width,
+                    bar_y + bar_height
+                ),
+                radius=9,
+                fill="white"
+            )
 
         return frame
