@@ -4,6 +4,8 @@ import time
 import requests
 import spotipy
 
+from PIL import Image
+
 from spotipy.oauth2 import SpotifyOAuth
 
 from config import (
@@ -38,18 +40,14 @@ class SpotifyPlugin:
         self.last_image = None
         self.last_track = None
 
-        # Cached Spotify state
         self.cached_data = None
 
-        # Last time Spotify API was queried
         self.last_poll = 0.0
 
-        # Poll interval from config
         self.poll_interval = (
             SPOTIFY_POLL_INTERVAL
         )
 
-        # Used for smooth local progress
         self.progress_ms = 0
         self.duration_ms = 1
 
@@ -66,6 +64,12 @@ class SpotifyPlugin:
         if url == self.last_image:
             return
 
+        temp_path = (
+            ALBUM_CACHE_PATH
+            +
+            ".tmp"
+        )
+
         try:
 
             response = requests.get(
@@ -75,14 +79,37 @@ class SpotifyPlugin:
 
             response.raise_for_status()
 
+
+            # Write new image to temporary file first.
+
             with open(
-                ALBUM_CACHE_PATH,
+                temp_path,
                 "wb"
             ) as f:
 
                 f.write(
                     response.content
                 )
+
+
+            # Validate that Pillow can actually
+            # open and understand the image.
+
+            with Image.open(
+                temp_path
+            ) as image:
+
+                image.verify()
+
+
+            # Replace the old artwork only after
+            # the new image has been validated.
+
+            os.replace(
+                temp_path,
+                ALBUM_CACHE_PATH
+            )
+
 
             self.last_image = url
 
@@ -97,6 +124,24 @@ class SpotifyPlugin:
                 "Album download error:",
                 e
             )
+
+
+            # Remove incomplete temporary file,
+            # but preserve the last valid album.
+
+            try:
+
+                if os.path.exists(
+                    temp_path
+                ):
+
+                    os.remove(
+                        temp_path
+                    )
+
+            except Exception:
+
+                pass
 
 
     def poll_spotify(self):
