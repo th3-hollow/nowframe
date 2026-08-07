@@ -1,3 +1,5 @@
+import colorsys
+
 from PIL import (
     Image,
     ImageDraw,
@@ -30,7 +32,6 @@ class PremiumRenderer:
 
         self.cache = BackgroundCache()
 
-
         self.title_font = ImageFont.truetype(
             font_bold,
             50
@@ -46,13 +47,10 @@ class PremiumRenderer:
             120
         )
 
-
         self.base_frame = None
-
 
         self.bar_width = 1100
         self.bar_height = 18
-
 
         self.album_size = 300
         self.album_radius = 28
@@ -94,6 +92,148 @@ class PremiumRenderer:
         return image
 
 
+    def choose_glow_color(
+        self,
+        palette
+    ):
+
+        """
+        Choose an adaptive glow color.
+
+        Strongly prefers useful album accent
+        colors while rejecting near-black,
+        white and dull grey colors.
+        """
+
+        best_color = None
+        best_score = -1.0
+
+
+        for color in palette:
+
+            r, g, b = color
+
+            rf = r / 255.0
+            gf = g / 255.0
+            bf = b / 255.0
+
+            hue, saturation, value = (
+                colorsys.rgb_to_hsv(
+                    rf,
+                    gf,
+                    bf
+                )
+            )
+
+
+            # Too dark to make a useful glow.
+
+            if value < 0.12:
+                continue
+
+
+            # Prefer colors around medium
+            # brightness instead of pure white.
+
+            brightness_score = (
+                1.0
+                -
+                abs(
+                    value - 0.62
+                )
+            )
+
+
+            # Saturation is deliberately weighted
+            # heavily so a real album accent beats
+            # white/grey background colors.
+
+            score = (
+                saturation * 2.5
+                +
+                brightness_score
+            )
+
+
+            if score > best_score:
+
+                best_score = score
+                best_color = color
+
+
+        # Mostly monochrome album.
+        #
+        # Use a restrained neutral glow instead
+        # of forcing an arbitrary color.
+
+        if (
+            best_color is None
+            or
+            best_score < 1.15
+        ):
+
+            return (
+                115,
+                115,
+                115
+            )
+
+
+        r, g, b = best_color
+
+
+        # Normalize perceived intensity.
+        #
+        # This prevents bright orange/red covers
+        # from producing dramatically stronger
+        # glows than dark blue/green covers.
+
+        peak = max(
+            r,
+            g,
+            b
+        )
+
+        target_peak = 165
+
+
+        if peak > 0:
+
+            scale = (
+                target_peak
+                /
+                peak
+            )
+
+            r = int(
+                min(
+                    255,
+                    r * scale
+                )
+            )
+
+            g = int(
+                min(
+                    255,
+                    g * scale
+                )
+            )
+
+            b = int(
+                min(
+                    255,
+                    b * scale
+                )
+            )
+
+
+        return (
+            r,
+            g,
+            b
+        )
+
+
     def draw_album_art(
         self,
         frame
@@ -109,9 +249,7 @@ class PremiumRenderer:
                 self.cache.album_image.copy()
             )
 
-
             size = self.album_size
-
 
             album = ImageOps.fit(
                 album,
@@ -122,7 +260,6 @@ class PremiumRenderer:
                 method=Image.Resampling.LANCZOS
             )
 
-
             x = (
                 self.width - size
             ) // 2
@@ -131,7 +268,7 @@ class PremiumRenderer:
 
 
             # =========================
-            # Glow color
+            # Adaptive album glow
             # =========================
 
             palette = (
@@ -140,38 +277,27 @@ class PremiumRenderer:
                 [(100, 100, 100)]
             )
 
+            glow_color = (
+                self.choose_glow_color(
+                    palette
+                )
+            )
 
-            glow_color = palette[0]
-
-
-            max_channel = max(
+            print(
+                "Album glow:",
                 glow_color
             )
 
 
-            if max_channel > 0:
-
-                scale = min(
-                    1.0,
-                    180 / max_channel
-                )
-
-                glow_color = tuple(
-                    int(channel * scale)
-                    for channel in glow_color
-                )
-
-
             # =========================
-            # LOCAL glow
+            # OUTER GLOW
             #
-            # Previously this was a
-            # 1920x1080 blurred image.
-            #
-            # Now only ~540x540.
+            # Wide and subtle.
+            # Gives the album atmosphere
+            # without looking like a blob.
             # =========================
 
-            glow_margin = 120
+            glow_margin = 130
 
             glow_size = (
                 size
@@ -179,8 +305,7 @@ class PremiumRenderer:
                 glow_margin * 2
             )
 
-
-            glow_layer = Image.new(
+            outer_glow = Image.new(
                 "RGBA",
                 (
                     glow_size,
@@ -189,46 +314,104 @@ class PremiumRenderer:
                 (0, 0, 0, 0)
             )
 
-
-            glow_draw = ImageDraw.Draw(
-                glow_layer
+            outer_draw = ImageDraw.Draw(
+                outer_glow
             )
 
+            outer_padding = 38
 
-            glow_padding = 35
-
-
-            glow_draw.rounded_rectangle(
+            outer_draw.rounded_rectangle(
                 (
-                    glow_margin - glow_padding,
-                    glow_margin - glow_padding,
-                    glow_margin + size + glow_padding,
-                    glow_margin + size + glow_padding
+                    glow_margin - outer_padding,
+                    glow_margin - outer_padding,
+                    glow_margin + size + outer_padding,
+                    glow_margin + size + outer_padding
                 ),
-                radius=55,
+                radius=60,
                 fill=(
                     glow_color[0],
                     glow_color[1],
                     glow_color[2],
-                    75
+                    35
                 )
             )
 
-
-            glow_layer = glow_layer.filter(
+            outer_glow = outer_glow.filter(
                 ImageFilter.GaussianBlur(
-                    55
+                    80
                 )
             )
-
 
             frame.paste(
-                glow_layer,
+                outer_glow,
                 (
                     x - glow_margin,
                     y - glow_margin
                 ),
-                glow_layer
+                outer_glow
+            )
+
+
+            # =========================
+            # INNER GLOW
+            #
+            # Smaller and slightly stronger.
+            # Makes the light appear to originate
+            # from the album itself.
+            # =========================
+
+            inner_margin = 70
+
+            inner_size = (
+                size
+                +
+                inner_margin * 2
+            )
+
+            inner_glow = Image.new(
+                "RGBA",
+                (
+                    inner_size,
+                    inner_size
+                ),
+                (0, 0, 0, 0)
+            )
+
+            inner_draw = ImageDraw.Draw(
+                inner_glow
+            )
+
+            inner_padding = 18
+
+            inner_draw.rounded_rectangle(
+                (
+                    inner_margin - inner_padding,
+                    inner_margin - inner_padding,
+                    inner_margin + size + inner_padding,
+                    inner_margin + size + inner_padding
+                ),
+                radius=48,
+                fill=(
+                    glow_color[0],
+                    glow_color[1],
+                    glow_color[2],
+                    52
+                )
+            )
+
+            inner_glow = inner_glow.filter(
+                ImageFilter.GaussianBlur(
+                    34
+                )
+            )
+
+            frame.paste(
+                inner_glow,
+                (
+                    x - inner_margin,
+                    y - inner_margin
+                ),
+                inner_glow
             )
 
 
@@ -244,7 +427,6 @@ class PremiumRenderer:
                 shadow_margin * 2
             )
 
-
             shadow_layer = Image.new(
                 "RGBA",
                 (
@@ -254,11 +436,9 @@ class PremiumRenderer:
                 (0, 0, 0, 0)
             )
 
-
             shadow_draw = ImageDraw.Draw(
                 shadow_layer
             )
-
 
             shadow_draw.rounded_rectangle(
                 (
@@ -276,13 +456,11 @@ class PremiumRenderer:
                 )
             )
 
-
             shadow_layer = shadow_layer.filter(
                 ImageFilter.GaussianBlur(
                     20
                 )
             )
-
 
             frame.paste(
                 shadow_layer,
@@ -295,7 +473,7 @@ class PremiumRenderer:
 
 
             # =========================
-            # Rounded album
+            # Rounded album corners
             # =========================
 
             mask = Image.new(
@@ -307,11 +485,9 @@ class PremiumRenderer:
                 0
             )
 
-
             mask_draw = ImageDraw.Draw(
                 mask
             )
-
 
             mask_draw.rounded_rectangle(
                 (
@@ -323,7 +499,6 @@ class PremiumRenderer:
                 radius=self.album_radius,
                 fill=255
             )
-
 
             frame.paste(
                 album,
@@ -355,7 +530,6 @@ class PremiumRenderer:
             image
         )
 
-
         progress = max(
             0.0,
             min(
@@ -363,7 +537,6 @@ class PremiumRenderer:
                 progress
             )
         )
-
 
         draw.rounded_rectangle(
             (
@@ -376,13 +549,11 @@ class PremiumRenderer:
             fill=(65, 65, 65)
         )
 
-
         filled_width = int(
             self.bar_width
             *
             progress
         )
-
 
         if filled_width > 0:
 
@@ -407,11 +578,9 @@ class PremiumRenderer:
 
             return None
 
-
         bar_x, bar_y = (
             self.layout.progress_position()
         )
-
 
         region = self.base_frame.crop(
             (
@@ -422,14 +591,12 @@ class PremiumRenderer:
             )
         )
 
-
         self.draw_progress(
             region,
             progress,
             0,
             0
         )
-
 
         return region
 
@@ -444,7 +611,6 @@ class PremiumRenderer:
 
         frame = self.create_frame()
 
-
         background = self.cache.generate(
             album_path,
             (
@@ -452,7 +618,6 @@ class PremiumRenderer:
                 self.height
             )
         )
-
 
         if background is not None:
 
@@ -462,8 +627,8 @@ class PremiumRenderer:
             )
 
 
-        # Album art uses the SAME cached
-        # image + palette as the background.
+        # Album art uses the same cached
+        # image and palette as the background.
 
         self.draw_album_art(
             frame
@@ -473,7 +638,6 @@ class PremiumRenderer:
         draw = ImageDraw.Draw(
             frame
         )
-
 
         draw.text(
             (
@@ -489,7 +653,6 @@ class PremiumRenderer:
             ),
             anchor="mm"
         )
-
 
         draw.text(
             (
@@ -516,13 +679,11 @@ class PremiumRenderer:
             self.layout.progress_position()
         )
 
-
         self.draw_progress(
             frame,
             progress,
             bar_x,
             bar_y
         )
-
 
         return frame
