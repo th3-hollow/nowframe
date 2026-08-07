@@ -32,6 +32,9 @@ class PremiumRenderer:
 
         self.cache = BackgroundCache()
 
+        self.font_regular_path = font_regular
+        self.font_bold_path = font_bold
+
         self.title_font = ImageFont.truetype(
             font_bold,
             50
@@ -97,14 +100,6 @@ class PremiumRenderer:
         palette
     ):
 
-        """
-        Choose an adaptive glow color.
-
-        Strongly prefers useful album accent
-        colors while rejecting near-black,
-        white and dull grey colors.
-        """
-
         best_color = None
         best_score = -1.0
 
@@ -126,14 +121,9 @@ class PremiumRenderer:
             )
 
 
-            # Too dark to make a useful glow.
-
             if value < 0.12:
                 continue
 
-
-            # Prefer colors around medium
-            # brightness instead of pure white.
 
             brightness_score = (
                 1.0
@@ -143,10 +133,6 @@ class PremiumRenderer:
                 )
             )
 
-
-            # Saturation is deliberately weighted
-            # heavily so a real album accent beats
-            # white/grey background colors.
 
             score = (
                 saturation * 2.5
@@ -160,11 +146,6 @@ class PremiumRenderer:
                 best_score = score
                 best_color = color
 
-
-        # Mostly monochrome album.
-        #
-        # Use a restrained neutral glow instead
-        # of forcing an arbitrary color.
 
         if (
             best_color is None
@@ -180,13 +161,6 @@ class PremiumRenderer:
 
 
         r, g, b = best_color
-
-
-        # Normalize perceived intensity.
-        #
-        # This prevents bright orange/red covers
-        # from producing dramatically stronger
-        # glows than dark blue/green covers.
 
         peak = max(
             r,
@@ -290,11 +264,7 @@ class PremiumRenderer:
 
 
             # =========================
-            # OUTER GLOW
-            #
-            # Wide and subtle.
-            # Gives the album atmosphere
-            # without looking like a blob.
+            # Outer glow
             # =========================
 
             glow_margin = 130
@@ -353,11 +323,7 @@ class PremiumRenderer:
 
 
             # =========================
-            # INNER GLOW
-            #
-            # Smaller and slightly stronger.
-            # Makes the light appear to originate
-            # from the album itself.
+            # Inner glow
             # =========================
 
             inner_margin = 70
@@ -416,7 +382,7 @@ class PremiumRenderer:
 
 
             # =========================
-            # LOCAL shadow
+            # Local shadow
             # =========================
 
             shadow_margin = 55
@@ -516,6 +482,89 @@ class PremiumRenderer:
                 "Album render error:",
                 e
             )
+
+
+    def fit_title_font(
+        self,
+        text,
+        max_width=1450,
+        max_size=50,
+        min_size=30
+    ):
+
+        # Try progressively smaller fonts
+        # until the title fits.
+
+        for font_size in range(
+            max_size,
+            min_size - 1,
+            -2
+        ):
+
+            font = ImageFont.truetype(
+                self.font_bold_path,
+                font_size
+            )
+
+            bbox = font.getbbox(
+                text
+            )
+
+            text_width = (
+                bbox[2] - bbox[0]
+            )
+
+            if text_width <= max_width:
+
+                return (
+                    font,
+                    text
+                )
+
+
+        # Still too long at minimum size.
+        # Truncate cleanly with an ellipsis.
+
+        font = ImageFont.truetype(
+            self.font_bold_path,
+            min_size
+        )
+
+        display_text = text
+
+
+        while len(display_text) > 1:
+
+            candidate = (
+                display_text
+                +
+                "…"
+            )
+
+            bbox = font.getbbox(
+                candidate
+            )
+
+            text_width = (
+                bbox[2] - bbox[0]
+            )
+
+            if text_width <= max_width:
+
+                return (
+                    font,
+                    candidate
+                )
+
+            display_text = (
+                display_text[:-1]
+            )
+
+
+        return (
+            font,
+            "…"
+        )
 
 
     def draw_progress(
@@ -627,9 +676,6 @@ class PremiumRenderer:
             )
 
 
-        # Album art uses the same cached
-        # image and palette as the background.
-
         self.draw_album_art(
             frame
         )
@@ -639,13 +685,24 @@ class PremiumRenderer:
             frame
         )
 
+
+        # =========================
+        # Adaptive title
+        # =========================
+
+        title_font, display_title = (
+            self.fit_title_font(
+                title
+            )
+        )
+
         draw.text(
             (
                 self.width // 2,
                 465
             ),
-            title,
-            font=self.title_font,
+            display_title,
+            font=title_font,
             fill=(
                 255,
                 255,
@@ -653,6 +710,11 @@ class PremiumRenderer:
             ),
             anchor="mm"
         )
+
+
+        # =========================
+        # Artist
+        # =========================
 
         draw.text(
             (
