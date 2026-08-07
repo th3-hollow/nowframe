@@ -183,7 +183,7 @@ while True:
 
             if (
                 update.get("transition")
-                == "song"
+                in ("song", "mode")
                 and
                 current_screen is not None
             ):

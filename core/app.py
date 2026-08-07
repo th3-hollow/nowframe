@@ -1,3 +1,5 @@
+import time
+
 from core.state import DisplayState
 from core.plugins import PluginManager
 
@@ -38,6 +40,7 @@ class NowFrameApp:
             self.spotify
         )
 
+
         if RENDERER_MODE == "premium":
 
             print("Using Premium Renderer")
@@ -56,14 +59,33 @@ class NowFrameApp:
             self.renderer = Renderer()
 
 
+        # =================================
+        # Display state
+        # =================================
+
         self.last_mode = None
         self.last_track_key = None
         self.last_clock_text = None
 
 
+        # =================================
+        # Pause grace period
+        #
+        # Keep the current Spotify screen
+        # visible for this many seconds
+        # after playback pauses.
+        # =================================
+
+        self.pause_grace_seconds = 10.0
+
+        self.pause_started = None
+
+
     def create_update(self):
 
         spotify_data = self.spotify.get_data()
+
+        now = time.monotonic()
 
 
         # =================================
@@ -71,6 +93,12 @@ class NowFrameApp:
         # =================================
 
         if spotify_data["playing"]:
+
+            # Playback is active again.
+            # Cancel any pending pause timer.
+
+            self.pause_started = None
+
 
             track_key = (
                 spotify_data["title"],
@@ -81,6 +109,11 @@ class NowFrameApp:
 
             was_playing = (
                 self.last_mode == "playing"
+            )
+
+
+            was_clock = (
+                self.last_mode == "clock"
             )
 
 
@@ -167,9 +200,18 @@ class NowFrameApp:
             transition = None
 
 
+            # New song while already playing.
+
             if track_changed:
 
                 transition = "song"
+
+
+            # Returning from idle clock.
+
+            elif was_clock:
+
+                transition = "mode"
 
 
             return {
@@ -180,13 +222,59 @@ class NowFrameApp:
 
 
         # =================================
-        # CLOCK / PAUSED
+        # NOT PLAYING
+        # =================================
+
+        # If we were just playing, begin the
+        # 10-second pause grace period.
+
+        if self.last_mode == "playing":
+
+            if self.pause_started is None:
+
+                self.pause_started = now
+
+                print(
+                    "Playback paused - "
+                    "starting 10 second grace period"
+                )
+
+
+            paused_for = (
+                now - self.pause_started
+            )
+
+
+            # Keep the current Spotify screen
+            # untouched during the grace period.
+
+            if (
+                paused_for
+                <
+                self.pause_grace_seconds
+            ):
+
+                return None
+
+
+            print(
+                "Pause grace period ended - "
+                "switching to clock"
+            )
+
+
+        # =================================
+        # CLOCK
         # =================================
 
         clock_data = self.clock.get_data()
 
         clock_text = clock_data["time"]
 
+
+        # Once already on the clock, only
+        # redraw when the displayed minute
+        # actually changes.
 
         if (
             self.last_mode == "clock"
@@ -197,8 +285,15 @@ class NowFrameApp:
             return None
 
 
+        entering_clock = (
+            self.last_mode != "clock"
+        )
+
+
         self.last_mode = "clock"
         self.last_clock_text = clock_text
+
+        self.pause_started = None
 
 
         frame = self.renderer.create_frame()
@@ -212,7 +307,11 @@ class NowFrameApp:
         return {
             "type": "full",
             "image": frame,
-            "transition": None
+            "transition": (
+                "mode"
+                if entering_clock
+                else None
+            )
         }
 
 
@@ -221,6 +320,7 @@ class NowFrameApp:
         update = self.create_update()
 
         if update is None:
+
             return self.renderer.create_frame()
 
         return update["image"]
