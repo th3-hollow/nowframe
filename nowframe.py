@@ -14,6 +14,13 @@ from core.v2.display_engine import (
     show_region
 )
 
+from config import (
+    CROSSFADE_ENABLED,
+    CROSSFADE_STEPS,
+    PERFORMANCE_LOGGING,
+    PERFORMANCE_REPORT_SECONDS
+)
+
 
 print("NowFrame starting...")
 
@@ -36,7 +43,7 @@ region_time = 0.0
 def crossfade(
     old_frame,
     new_frame,
-    steps=6
+    steps=CROSSFADE_STEPS
 ):
 
     if old_frame is None:
@@ -182,6 +189,8 @@ while True:
 
 
             if (
+                CROSSFADE_ENABLED
+                and
                 update.get("transition")
                 in ("song", "mode")
                 and
@@ -191,7 +200,7 @@ while True:
                 crossfade(
                     current_screen,
                     new_frame,
-                    steps=6
+                    steps=CROSSFADE_STEPS
                 )
 
             else:
@@ -274,8 +283,10 @@ while True:
 
 
         if (
+            PERFORMANCE_LOGGING
+            and
             now - last_report
-            >= 5
+            >= PERFORMANCE_REPORT_SECONDS
         ):
 
             elapsed = (

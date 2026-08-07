@@ -11,6 +11,33 @@ from PIL import (
 from layouts.premium import PremiumLayout
 from core.v2.cache import BackgroundCache
 
+from config import (
+    ALBUM_SIZE,
+    ALBUM_RADIUS,
+    ALBUM_Y,
+    GLOW_ENABLED,
+    GLOW_TARGET_PEAK,
+    OUTER_GLOW_ALPHA,
+    OUTER_GLOW_BLUR,
+    INNER_GLOW_ALPHA,
+    INNER_GLOW_BLUR,
+    TITLE_MAX_FONT_SIZE,
+    TITLE_MIN_FONT_SIZE,
+    TITLE_MAX_WIDTH,
+    ARTIST_FONT_SIZE,
+    TITLE_Y,
+    ARTIST_Y,
+    PROGRESS_WIDTH,
+    PROGRESS_HEIGHT,
+    PROGRESS_BACKGROUND,
+    PROGRESS_FOREGROUND,
+    CLOCK_FONT_SIZE,
+    CLOCK_DATE_FONT_SIZE,
+    CLOCK_BACKGROUND_DARKEN,
+    CLOCK_TIME_Y_OFFSET,
+    CLOCK_DATE_Y_OFFSET
+)
+
 
 class PremiumRenderer:
 
@@ -37,26 +64,26 @@ class PremiumRenderer:
 
         self.title_font = ImageFont.truetype(
             font_bold,
-            50
+            TITLE_MAX_FONT_SIZE
         )
 
         self.artist_font = ImageFont.truetype(
             font_regular,
-            30
+            ARTIST_FONT_SIZE
         )
 
         self.clock_font = ImageFont.truetype(
             font_bold,
-            120
+            CLOCK_FONT_SIZE
         )
 
         self.base_frame = None
 
-        self.bar_width = 1100
-        self.bar_height = 18
+        self.bar_width = PROGRESS_WIDTH
+        self.bar_height = PROGRESS_HEIGHT
 
-        self.album_size = 300
-        self.album_radius = 28
+        self.album_size = ALBUM_SIZE
+        self.album_radius = ALBUM_RADIUS
 
 
     def create_frame(self):
@@ -95,7 +122,7 @@ class PremiumRenderer:
             clock_background = Image.blend(
                 clock_background,
                 dark_overlay,
-                0.58
+                CLOCK_BACKGROUND_DARKEN
             )
 
             image.paste(
@@ -114,7 +141,7 @@ class PremiumRenderer:
         draw.text(
             (
                 self.width // 2,
-                self.height // 2 - 35
+                self.height // 2 + CLOCK_TIME_Y_OFFSET
             ),
             data["time"],
             font=self.clock_font,
@@ -131,13 +158,13 @@ class PremiumRenderer:
 
         date_font = ImageFont.truetype(
             self.font_regular_path,
-            34
+            CLOCK_DATE_FONT_SIZE
         )
 
         draw.text(
             (
                 self.width // 2,
-                self.height // 2 + 85
+                self.height // 2 + CLOCK_DATE_Y_OFFSET
             ),
             data["date"],
             font=date_font,
@@ -226,7 +253,7 @@ class PremiumRenderer:
             b
         )
 
-        target_peak = 165
+        target_peak = GLOW_TARGET_PEAK
 
 
         if peak > 0:
@@ -296,7 +323,7 @@ class PremiumRenderer:
                 self.width - size
             ) // 2
 
-            y = 110
+            y = ALBUM_Y
 
 
             # =========================
@@ -360,13 +387,13 @@ class PremiumRenderer:
                     glow_color[0],
                     glow_color[1],
                     glow_color[2],
-                    35
+                    OUTER_GLOW_ALPHA
                 )
             )
 
             outer_glow = outer_glow.filter(
                 ImageFilter.GaussianBlur(
-                    80
+                    OUTER_GLOW_BLUR
                 )
             )
 
@@ -419,13 +446,13 @@ class PremiumRenderer:
                     glow_color[0],
                     glow_color[1],
                     glow_color[2],
-                    52
+                    INNER_GLOW_ALPHA
                 )
             )
 
             inner_glow = inner_glow.filter(
                 ImageFilter.GaussianBlur(
-                    34
+                    INNER_GLOW_BLUR
                 )
             )
 
@@ -545,9 +572,9 @@ class PremiumRenderer:
     def fit_title_font(
         self,
         text,
-        max_width=1450,
-        max_size=50,
-        min_size=30
+        max_width=TITLE_MAX_WIDTH,
+        max_size=TITLE_MAX_FONT_SIZE,
+        min_size=TITLE_MIN_FONT_SIZE
     ):
 
         # Try progressively smaller fonts
@@ -653,7 +680,7 @@ class PremiumRenderer:
                 y + self.bar_height
             ),
             radius=9,
-            fill=(65, 65, 65)
+            fill=PROGRESS_BACKGROUND
         )
 
         filled_width = int(
@@ -672,7 +699,7 @@ class PremiumRenderer:
                     y + self.bar_height
                 ),
                 radius=9,
-                fill="white"
+                fill=PROGRESS_FOREGROUND
             )
 
 
@@ -757,7 +784,7 @@ class PremiumRenderer:
         draw.text(
             (
                 self.width // 2,
-                465
+                TITLE_Y
             ),
             display_title,
             font=title_font,
@@ -777,7 +804,7 @@ class PremiumRenderer:
         draw.text(
             (
                 self.width // 2,
-                525
+                ARTIST_Y
             ),
             artist,
             font=self.artist_font,

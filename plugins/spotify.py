@@ -4,6 +4,11 @@ import spotipy
 
 from spotipy.oauth2 import SpotifyOAuth
 
+from config import (
+    SPOTIFY_POLL_INTERVAL,
+    SPOTIFY_REQUEST_TIMEOUT
+)
+
 
 ALBUM_PATH = "assets/images/album.jpg"
 
@@ -34,7 +39,7 @@ class SpotifyPlugin:
         self.last_poll = 0.0
 
         # Poll Spotify every 2 seconds
-        self.poll_interval = 2.0
+        self.poll_interval = SPOTIFY_POLL_INTERVAL
 
         # Used for smooth local progress
         self.progress_ms = 0
@@ -51,7 +56,7 @@ class SpotifyPlugin:
 
             response = requests.get(
                 url,
-                timeout=10
+                timeout=SPOTIFY_REQUEST_TIMEOUT
             )
 
             response.raise_for_status()

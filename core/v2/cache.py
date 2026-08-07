@@ -10,6 +10,16 @@ from PIL import (
 
 from core.v2.colors import ColorExtractor
 
+from config import (
+    BACKGROUND_WORK_SIZE,
+    BACKGROUND_BLUR,
+    BACKGROUND_SECOND_BLUR,
+    BACKGROUND_SATURATION,
+    BACKGROUND_CONTRAST,
+    BACKGROUND_BRIGHTNESS,
+    BACKGROUND_DITHER
+)
+
 
 class BackgroundCache:
 
@@ -140,10 +150,7 @@ class BackgroundCache:
             # Background
             # =========================
 
-            work_size = (
-                640,
-                360
-            )
+            work_size = BACKGROUND_WORK_SIZE
 
 
             background = ImageOps.fit(
@@ -155,7 +162,7 @@ class BackgroundCache:
 
             background = background.filter(
                 ImageFilter.GaussianBlur(
-                    32
+                    BACKGROUND_BLUR
                 )
             )
 
@@ -163,27 +170,27 @@ class BackgroundCache:
             background = ImageEnhance.Color(
                 background
             ).enhance(
-                1.25
+                BACKGROUND_SATURATION
             )
 
 
             background = ImageEnhance.Contrast(
                 background
             ).enhance(
-                1.08
+                BACKGROUND_CONTRAST
             )
 
 
             background = ImageEnhance.Brightness(
                 background
             ).enhance(
-                0.43
+                BACKGROUND_BRIGHTNESS
             )
 
 
             background = background.filter(
                 ImageFilter.GaussianBlur(
-                    10
+                    BACKGROUND_SECOND_BLUR
                 )
             )
 
@@ -198,11 +205,13 @@ class BackgroundCache:
             )
 
 
-            background = (
-                self.add_rgb565_dither(
-                    background
+            if BACKGROUND_DITHER:
+
+                background = (
+                    self.add_rgb565_dither(
+                        background
+                    )
                 )
-            )
 
 
             self.background = background

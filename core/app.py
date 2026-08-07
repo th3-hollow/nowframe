@@ -11,7 +11,9 @@ from config import (
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     FONT_REGULAR,
-    FONT_BOLD
+    FONT_BOLD,
+    PAUSE_GRACE_SECONDS,
+    CLOCK_ENABLED
 )
 
 from core.renderer import Renderer
@@ -76,7 +78,7 @@ class NowFrameApp:
         # after playback pauses.
         # =================================
 
-        self.pause_grace_seconds = 10.0
+        self.pause_grace_seconds = PAUSE_GRACE_SECONDS
 
         self.pause_started = None
 
@@ -235,8 +237,8 @@ class NowFrameApp:
                 self.pause_started = now
 
                 print(
-                    "Playback paused - "
-                    "starting 10 second grace period"
+                    f"Playback paused - starting "
+                    f"{self.pause_grace_seconds:g} second grace period"
                 )
 
 
@@ -266,6 +268,9 @@ class NowFrameApp:
         # =================================
         # CLOCK
         # =================================
+
+        if not CLOCK_ENABLED:
+            return None
 
         clock_data = self.clock.get_data()
 
