@@ -1,8 +1,8 @@
 import os
+import numpy as np
 
 from PIL import (
     Image,
-    ImageDraw,
     ImageFilter,
     ImageEnhance,
     ImageOps
@@ -14,6 +14,7 @@ from core.v2.colors import ColorExtractor
 class BackgroundCache:
 
     def __init__(self):
+
         self.last_album = None
         self.last_modified = None
         self.background = None
@@ -21,31 +22,100 @@ class BackgroundCache:
         self.colors = ColorExtractor()
 
 
+    def add_rgb565_dither(self, image):
+
+        """
+        Add extremely subtle noise before RGB565 conversion.
+
+        RGB565 has relatively large color steps:
+        R = 5 bits
+        G = 6 bits
+        B = 5 bits
+
+        Tiny noise helps break visible gradient bands
+        without making the image look grainy.
+        """
+
+        array = np.asarray(
+            image,
+            dtype=np.int16
+        ).copy()
+
+        height, width, channels = array.shape
+
+        rng = np.random.default_rng(
+            12345
+        )
+
+        # Red and blue have larger RGB565 steps,
+        # so they receive slightly stronger dithering.
+
+        red_noise = rng.integers(
+            -4,
+            5,
+            size=(height, width)
+        )
+
+        green_noise = rng.integers(
+            -2,
+            3,
+            size=(height, width)
+        )
+
+        blue_noise = rng.integers(
+            -4,
+            5,
+            size=(height, width)
+        )
+
+        array[:, :, 0] += red_noise
+        array[:, :, 1] += green_noise
+        array[:, :, 2] += blue_noise
+
+        array = np.clip(
+            array,
+            0,
+            255
+        ).astype(
+            np.uint8
+        )
+
+        return Image.fromarray(
+            array,
+            "RGB"
+        )
+
+
     def generate(self, album_path, size):
 
         try:
-            modified = os.path.getmtime(album_path)
+
+            modified = os.path.getmtime(
+                album_path
+            )
 
             if (
                 album_path == self.last_album
-                and modified == self.last_modified
+                and
+                modified == self.last_modified
             ):
+
                 return self.background
 
 
-            print("Generating premium background...")
+            print(
+                "Generating premium background..."
+            )
 
 
-            # Extract colors from album art
+            # =====================================
+            # Read album palette
+            # =====================================
 
             palette = self.colors.get_colors(
                 album_path,
                 count=5
             )
-
-            primary = palette[0]
-            secondary = palette[1]
-            accent = palette[2]
 
             print(
                 "Album palette:",
@@ -53,154 +123,135 @@ class BackgroundCache:
             )
 
 
-            # Render background at low resolution.
-            # Much faster on Pi Zero 2 W.
-
-            work_width = 320
-            work_height = 180
+            # =====================================
+            # Work at medium resolution
+            #
+            # 320x180 was contributing to the
+            # large contour-like shapes.
+            #
+            # 640x360 is still inexpensive because
+            # this runs only when the album changes.
+            # =====================================
 
             work_size = (
-                work_width,
-                work_height
+                640,
+                360
             )
 
-
-            # Blurred album layer
 
             album = Image.open(
                 album_path
-            ).convert("RGB")
+            ).convert(
+                "RGB"
+            )
 
-            album_background = ImageOps.fit(
+
+            # Fill the entire 16:9 frame naturally
+            # using the actual album artwork.
+
+            background = ImageOps.fit(
                 album,
-                work_size
-            )
-
-            album_background = album_background.filter(
-                ImageFilter.GaussianBlur(18)
-            )
-
-            album_background = ImageEnhance.Brightness(
-                album_background
-            ).enhance(0.32)
-
-
-            # Dynamic album-color glow
-
-            glow = Image.new(
-                "RGBA",
                 work_size,
-                (5, 5, 8, 255)
-            )
-
-            glow_draw = ImageDraw.Draw(
-                glow,
-                "RGBA"
+                method=Image.Resampling.LANCZOS
             )
 
 
-            # Primary color
+            # =====================================
+            # Blur the actual artwork
+            # =====================================
 
-            glow_draw.ellipse(
-                (
-                    -100,
-                    -80,
-                    260,
-                    260
-                ),
-                fill=(
-                    primary[0],
-                    primary[1],
-                    primary[2],
-                    210
+            background = background.filter(
+                ImageFilter.GaussianBlur(
+                    32
                 )
             )
 
 
-            # Secondary color
+            # =====================================
+            # Slightly enrich album colors
+            # =====================================
 
-            glow_draw.ellipse(
-                (
-                    120,
-                    -100,
-                    430,
-                    240
-                ),
-                fill=(
-                    secondary[0],
-                    secondary[1],
-                    secondary[2],
-                    180
+            background = ImageEnhance.Color(
+                background
+            ).enhance(
+                1.25
+            )
+
+
+            # Slight contrast boost keeps the
+            # blurred background from looking flat.
+
+            background = ImageEnhance.Contrast(
+                background
+            ).enhance(
+                1.08
+            )
+
+
+            # =====================================
+            # Darken
+            #
+            # We want atmosphere, not competition
+            # with the album art and text.
+            # =====================================
+
+            background = ImageEnhance.Brightness(
+                background
+            ).enhance(
+                0.43
+            )
+
+
+            # =====================================
+            # Soft second blur
+            #
+            # Helps remove remaining structures
+            # after contrast/color processing.
+            # =====================================
+
+            background = background.filter(
+                ImageFilter.GaussianBlur(
+                    10
                 )
             )
 
 
-            # Accent color
-
-            glow_draw.ellipse(
-                (
-                    70,
-                    70,
-                    370,
-                    280
-                ),
-                fill=(
-                    accent[0],
-                    accent[1],
-                    accent[2],
-                    150
-                )
-            )
-
-
-            glow = glow.filter(
-                ImageFilter.GaussianBlur(45)
-            )
-
-            glow = glow.convert("RGB")
-
-
-            # Combine album blur and colors
-
-            background = Image.blend(
-                album_background,
-                glow,
-                0.55
-            )
-
-
-            # Darken for text readability
-
-            dark_overlay = Image.new(
-                "RGB",
-                work_size,
-                (0, 0, 0)
-            )
-
-            background = Image.blend(
-                background,
-                dark_overlay,
-                0.28
-            )
-
-
-            # Upscale to display resolution
+            # =====================================
+            # Upscale cleanly to 1920x1080
+            # =====================================
 
             background = background.resize(
                 size,
-                Image.Resampling.BILINEAR
+                Image.Resampling.BICUBIC
             )
 
 
-            # Cache completed background
+            # =====================================
+            # RGB565-friendly dithering
+            #
+            # Do this AFTER upscaling so the dither
+            # exists at the physical pixel level.
+            # =====================================
+
+            background = self.add_rgb565_dither(
+                background
+            )
+
+
+            # =====================================
+            # Cache
+            # =====================================
 
             self.background = background
+
             self.last_album = album_path
             self.last_modified = modified
 
+
             print(
-                "Premium dynamic background updated"
+                "Premium smooth background updated"
             )
+
 
             return background
 
