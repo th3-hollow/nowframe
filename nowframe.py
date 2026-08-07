@@ -6,10 +6,16 @@ sys.path.append(
 )
 
 from core.app import NowFrameApp
-from display_engine import show_frame
+
+from core.v2.display_engine import (
+    show_frame,
+    show_region
+)
 
 
-print("NowFrame starting...")
+print(
+    "NowFrame starting..."
+)
 
 
 app = NowFrameApp()
@@ -17,10 +23,11 @@ app = NowFrameApp()
 
 last_report = time.monotonic()
 
-frame_count = 0
+full_frames = 0
+region_frames = 0
 
-render_total = 0.0
-display_total = 0.0
+full_time = 0.0
+region_time = 0.0
 
 
 while True:
@@ -30,66 +37,113 @@ while True:
         start = time.monotonic()
 
 
-        frame = app.create_frame()
+        update = app.create_update()
 
 
-        after_render = time.monotonic()
+        if update is None:
+
+            time.sleep(
+                0.05
+            )
+
+            continue
 
 
-        show_frame(
-            frame
-        )
+        if update["type"] == "full":
+
+            show_frame(
+                update["image"]
+            )
+
+            full_frames += 1
+
+            full_time += (
+                time.monotonic()
+                - start
+            )
 
 
-        after_display = time.monotonic()
+        elif update["type"] == "region":
+
+            show_region(
+                update["image"],
+                update["x"],
+                update["y"]
+            )
+
+            region_frames += 1
+
+            region_time += (
+                time.monotonic()
+                - start
+            )
 
 
-        render_total += (
-            after_render - start
-        )
-
-        display_total += (
-            after_display - after_render
-        )
-
-
-        frame_count += 1
+        now = time.monotonic()
 
 
         if (
-            after_display - last_report
+            now - last_report
             >= 5
         ):
 
             elapsed = (
-                after_display - last_report
+                now - last_report
+            )
+
+
+            total_frames = (
+                full_frames
+                +
+                region_frames
             )
 
 
             fps = (
-                frame_count / elapsed
+                total_frames
+                /
+                elapsed
+            )
+
+
+            average_region = (
+                region_time
+                /
+                region_frames
+                if region_frames > 0
+                else 0
+            )
+
+
+            average_full = (
+                full_time
+                /
+                full_frames
+                if full_frames > 0
+                else 0
             )
 
 
             print(
                 f"FPS: {fps:.2f} | "
-                f"render: "
-                f"{render_total / frame_count:.3f}s | "
-                f"display: "
-                f"{display_total / frame_count:.3f}s"
+                f"full: {full_frames} "
+                f"({average_full:.3f}s) | "
+                f"region: {region_frames} "
+                f"({average_region:.4f}s)"
             )
 
 
-            frame_count = 0
+            full_frames = 0
+            region_frames = 0
 
-            render_total = 0.0
-            display_total = 0.0
+            full_time = 0.0
+            region_time = 0.0
 
-            last_report = after_display
+            last_report = now
 
 
         time.sleep(
-            0.1
+            0.05
         )
 
 

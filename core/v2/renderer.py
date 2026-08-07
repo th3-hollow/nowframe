@@ -39,6 +39,11 @@ class PremiumRenderer:
             120
         )
 
+        self.base_frame = None
+
+        self.bar_width = 1100
+        self.bar_height = 18
+
 
     def create_frame(self):
 
@@ -68,6 +73,82 @@ class PremiumRenderer:
         )
 
         return image
+
+
+    def draw_progress(
+        self,
+        image,
+        progress,
+        x,
+        y
+    ):
+
+        draw = ImageDraw.Draw(image)
+
+        progress = max(
+            0.0,
+            min(
+                1.0,
+                progress
+            )
+        )
+
+        draw.rounded_rectangle(
+            (
+                x,
+                y,
+                x + self.bar_width,
+                y + self.bar_height
+            ),
+            radius=9,
+            fill=(80, 80, 80)
+        )
+
+        filled_width = int(
+            self.bar_width * progress
+        )
+
+        if filled_width > 0:
+
+            draw.rounded_rectangle(
+                (
+                    x,
+                    y,
+                    x + filled_width,
+                    y + self.bar_height
+                ),
+                radius=9,
+                fill="white"
+            )
+
+
+    def render_progress_region(
+        self,
+        progress
+    ):
+
+        if self.base_frame is None:
+            return None
+
+        bar_x, bar_y = self.layout.progress_position()
+
+        region = self.base_frame.crop(
+            (
+                bar_x,
+                bar_y,
+                bar_x + self.bar_width,
+                bar_y + self.bar_height
+            )
+        )
+
+        self.draw_progress(
+            region,
+            progress,
+            0,
+            0
+        )
+
+        return region
 
 
     def render(
@@ -148,45 +229,19 @@ class PremiumRenderer:
             anchor="mm"
         )
 
+        # Save the screen WITHOUT progress.
+        # This lets us restore the progress-bar
+        # background during partial updates.
+
+        self.base_frame = frame.copy()
+
         bar_x, bar_y = self.layout.progress_position()
 
-        bar_width = 1100
-        bar_height = 18
-
-        draw.rounded_rectangle(
-            (
-                bar_x,
-                bar_y,
-                bar_x + bar_width,
-                bar_y + bar_height
-            ),
-            radius=9,
-            fill=(80, 80, 80)
+        self.draw_progress(
+            frame,
+            progress,
+            bar_x,
+            bar_y
         )
-
-        progress = max(
-            0.0,
-            min(
-                1.0,
-                progress
-            )
-        )
-
-        filled_width = int(
-            bar_width * progress
-        )
-
-        if filled_width > 0:
-
-            draw.rounded_rectangle(
-                (
-                    bar_x,
-                    bar_y,
-                    bar_x + filled_width,
-                    bar_y + bar_height
-                ),
-                radius=9,
-                fill="white"
-            )
 
         return frame
