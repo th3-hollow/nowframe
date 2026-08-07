@@ -77,20 +77,78 @@ class PremiumRenderer:
         data
     ):
 
+        # Reuse the last Spotify background
+        # so idle mode visually matches NowFrame.
+
+        if self.cache.background is not None:
+
+            clock_background = (
+                self.cache.background.copy()
+            )
+
+            dark_overlay = Image.new(
+                "RGB",
+                clock_background.size,
+                (0, 0, 0)
+            )
+
+            clock_background = Image.blend(
+                clock_background,
+                dark_overlay,
+                0.58
+            )
+
+            image.paste(
+                clock_background,
+                (0, 0)
+            )
+
+
         draw = ImageDraw.Draw(
             image
+        )
+
+
+        # Large centered time
+
+        draw.text(
+            (
+                self.width // 2,
+                self.height // 2 - 35
+            ),
+            data["time"],
+            font=self.clock_font,
+            fill=(
+                255,
+                255,
+                255
+            ),
+            anchor="mm"
+        )
+
+
+        # Date underneath
+
+        date_font = ImageFont.truetype(
+            self.font_regular_path,
+            34
         )
 
         draw.text(
             (
                 self.width // 2,
-                self.height // 2
+                self.height // 2 + 85
             ),
-            data["time"],
-            font=self.clock_font,
-            fill="white",
+            data["date"],
+            font=date_font,
+            fill=(
+                185,
+                185,
+                185
+            ),
             anchor="mm"
         )
+
 
         return image
 
