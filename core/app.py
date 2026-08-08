@@ -14,7 +14,9 @@ from config import (
     FONT_BOLD,
     PAUSE_GRACE_SECONDS,
     CLOCK_ENABLED,
-    ALBUM_CACHE_PATH
+    ALBUM_CACHE_PATH,
+    IDLE_DISPLAY_MODE,
+    IDLE_BLACK_TIMEOUT
 )
 
 from core.renderer import Renderer
@@ -72,11 +74,7 @@ class NowFrameApp:
 
 
         # =================================
-        # Pause grace period
-        #
-        # Keep the current Spotify screen
-        # visible for this many seconds
-        # after playback pauses.
+        # Idle timing
         # =================================
 
         self.pause_grace_seconds = (
@@ -84,6 +82,7 @@ class NowFrameApp:
         )
 
         self.pause_started = None
+        self.idle_started = None
 
 
     def create_update(self):
@@ -101,10 +100,8 @@ class NowFrameApp:
 
         if spotify_data["playing"]:
 
-            # Playback is active again.
-            # Cancel any pending pause timer.
-
             self.pause_started = None
+            self.idle_started = None
 
 
             track_key = (
@@ -123,10 +120,12 @@ class NowFrameApp:
             )
 
 
-            was_clock = (
+            was_idle = (
                 self.last_mode
-                ==
-                "clock"
+                in (
+                    "clock",
+                    "black"
+                )
             )
 
 
@@ -245,16 +244,12 @@ class NowFrameApp:
             transition = None
 
 
-            # New song while already playing.
-
             if track_changed:
 
                 transition = "song"
 
 
-            # Returning from idle clock.
-
-            elif was_clock:
+            elif was_idle:
 
                 transition = "mode"
 
@@ -294,9 +289,6 @@ class NowFrameApp:
             )
 
 
-            # Keep the current Spotify screen
-            # untouched during the grace period.
-
             if (
                 paused_for
                 <
@@ -308,12 +300,119 @@ class NowFrameApp:
 
             print(
                 "Pause grace period ended - "
-                "switching to clock"
+                "entering idle mode"
             )
 
 
+            if self.idle_started is None:
+
+                self.idle_started = now
+
+
+        elif (
+            self.last_mode
+            in (
+                "clock",
+                "black"
+            )
+        ):
+
+            if self.idle_started is None:
+
+                self.idle_started = now
+
+
         # =================================
-        # CLOCK
+        # SECONDARY BLACK TIMEOUT
+        # =================================
+
+        if (
+            IDLE_BLACK_TIMEOUT
+            is not None
+            and
+            self.idle_started
+            is not None
+        ):
+
+            idle_for = (
+                now
+                -
+                self.idle_started
+            )
+
+
+            if (
+                idle_for
+                >=
+                IDLE_BLACK_TIMEOUT
+            ):
+
+                if (
+                    self.last_mode
+                    ==
+                    "black"
+                ):
+
+                    return None
+
+
+                print(
+                    "Idle black timeout reached"
+                )
+
+
+                frame = (
+                    self.renderer.create_frame()
+                )
+
+
+                self.last_mode = "black"
+                self.last_clock_text = None
+
+
+                return {
+                    "type": "full",
+                    "image": frame,
+                    "transition": "mode"
+                }
+
+
+        # =================================
+        # DIRECT BLACK MODE
+        # =================================
+
+        if (
+            IDLE_DISPLAY_MODE
+            ==
+            "black"
+        ):
+
+            if (
+                self.last_mode
+                ==
+                "black"
+            ):
+
+                return None
+
+
+            frame = (
+                self.renderer.create_frame()
+            )
+
+            self.last_mode = "black"
+            self.last_clock_text = None
+
+
+            return {
+                "type": "full",
+                "image": frame,
+                "transition": "mode"
+            }
+
+
+        # =================================
+        # CLOCK MODE
         # =================================
 
         if not CLOCK_ENABLED:
@@ -329,10 +428,6 @@ class NowFrameApp:
             clock_data["time"]
         )
 
-
-        # Once already on the clock,
-        # only redraw when the displayed
-        # minute changes.
 
         if (
             self.last_mode
@@ -354,13 +449,8 @@ class NowFrameApp:
         )
 
 
-        self.last_mode = (
-            "clock"
-        )
-
-        self.last_clock_text = (
-            clock_text
-        )
+        self.last_mode = "clock"
+        self.last_clock_text = clock_text
 
         self.pause_started = None
 
@@ -368,6 +458,11 @@ class NowFrameApp:
         frame = (
             self.renderer.create_frame()
         )
+
+
+        # The renderer will decide later
+        # whether clock mode uses album background
+        # or pure black based on config.
 
         frame = (
             self.renderer.draw_clock(

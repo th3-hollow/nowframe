@@ -46,6 +46,33 @@ ALBUM_CACHE_PATH = "/tmp/nowframe/album.jpg"
 
 PAUSE_GRACE_SECONDS = 10.0
 
+# ==========================
+# ADVANCED IDLE BEHAVIOR
+# ==========================
+
+# What the display should show after the
+# pause grace period ends.
+#
+# Options:
+# "clock_album" = clock over the last album background
+# "clock_black" = clock over a pure black background
+# "black"       = completely black screen
+
+IDLE_DISPLAY_MODE = "clock_album"
+
+
+# Optional second idle stage.
+#
+# After this many seconds in idle mode,
+# switch the display to completely black.
+#
+# Examples:
+# None = never switch to black
+# 600  = switch to black after 10 minutes
+# 1800 = switch to black after 30 minutes
+
+IDLE_BLACK_TIMEOUT = 600
+
 CLOCK_ENABLED = True
 
 CLOCK_FONT_SIZE = 120

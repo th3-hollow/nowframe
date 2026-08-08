@@ -35,7 +35,8 @@ from config import (
     CLOCK_DATE_FONT_SIZE,
     CLOCK_BACKGROUND_DARKEN,
     CLOCK_TIME_Y_OFFSET,
-    CLOCK_DATE_Y_OFFSET
+    CLOCK_DATE_Y_OFFSET,
+    IDLE_DISPLAY_MODE,
 )
 
 
@@ -107,7 +108,11 @@ class PremiumRenderer:
         # Reuse the last Spotify background
         # so idle mode visually matches NowFrame.
 
-        if self.cache.background is not None:
+        if (
+           IDLE_DISPLAY_MODE == "clock_album"
+           and
+           self.cache.background is not None
+        ):
 
             clock_background = (
                 self.cache.background.copy()
