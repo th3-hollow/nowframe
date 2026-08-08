@@ -3,12 +3,12 @@ import hashlib
 import requests
 
 from config import (
-    SPOTIFY_CODE_WIDTH,
-    SPOTIFY_CODE_HEIGHT
+    RUNTIME_CACHE_DIR,
+    SPOTIFY_CODE_WIDTH
 )
 
 
-CACHE_DIR = "/tmp/nowframe"
+CACHE_DIR = RUNTIME_CACHE_DIR
 
 
 class SpotifyCodeGenerator:

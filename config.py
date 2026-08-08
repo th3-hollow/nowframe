@@ -56,11 +56,6 @@ SPOTIFY_CODE_HEIGHT = 80
 
 SPOTIFY_CODE_POSITION = "above_progress"
 
-# Show small Spotify Code helper text.
-
-SPOTIFY_CODE_LABEL = False
-
-
 # ==========================
 # IDLE / CLOCK
 # ==========================

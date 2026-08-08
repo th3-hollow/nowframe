@@ -340,140 +340,141 @@ class PremiumRenderer:
             # Adaptive album glow
             # =========================
 
-            palette = (
-                self.cache.palette
-                or
-                [(100, 100, 100)]
-            )
+            if GLOW_ENABLED:
 
-            glow_color = (
-                self.choose_glow_color(
-                    palette
+                palette = (
+                    self.cache.palette
+                    or
+                    [(100, 100, 100)]
                 )
-            )
 
-            print(
-                "Album glow:",
-                glow_color
-            )
-
-
-            # =========================
-            # Outer glow
-            # =========================
-
-            glow_margin = 130
-
-            glow_size = (
-                size
-                +
-                glow_margin * 2
-            )
-
-            outer_glow = Image.new(
-                "RGBA",
-                (
-                    glow_size,
-                    glow_size
-                ),
-                (0, 0, 0, 0)
-            )
-
-            outer_draw = ImageDraw.Draw(
-                outer_glow
-            )
-
-            outer_padding = 38
-
-            outer_draw.rounded_rectangle(
-                (
-                    glow_margin - outer_padding,
-                    glow_margin - outer_padding,
-                    glow_margin + size + outer_padding,
-                    glow_margin + size + outer_padding
-                ),
-                radius=60,
-                fill=(
-                    glow_color[0],
-                    glow_color[1],
-                    glow_color[2],
-                    OUTER_GLOW_ALPHA
+                glow_color = (
+                    self.choose_glow_color(
+                        palette
+                    )
                 )
-            )
 
-            outer_glow = outer_glow.filter(
-                ImageFilter.GaussianBlur(
-                    OUTER_GLOW_BLUR
+                print(
+                    "Album glow:",
+                    glow_color
                 )
-            )
 
-            frame.paste(
-                outer_glow,
-                (
-                    x - glow_margin,
-                    y - glow_margin
-                ),
-                outer_glow
-            )
+                # =========================
+                # Outer glow
+                # =========================
 
+                glow_margin = 130
 
-            # =========================
-            # Inner glow
-            # =========================
-
-            inner_margin = 70
-
-            inner_size = (
-                size
-                +
-                inner_margin * 2
-            )
-
-            inner_glow = Image.new(
-                "RGBA",
-                (
-                    inner_size,
-                    inner_size
-                ),
-                (0, 0, 0, 0)
-            )
-
-            inner_draw = ImageDraw.Draw(
-                inner_glow
-            )
-
-            inner_padding = 18
-
-            inner_draw.rounded_rectangle(
-                (
-                    inner_margin - inner_padding,
-                    inner_margin - inner_padding,
-                    inner_margin + size + inner_padding,
-                    inner_margin + size + inner_padding
-                ),
-                radius=48,
-                fill=(
-                    glow_color[0],
-                    glow_color[1],
-                    glow_color[2],
-                    INNER_GLOW_ALPHA
+                glow_size = (
+                    size
+                    +
+                    glow_margin * 2
                 )
-            )
 
-            inner_glow = inner_glow.filter(
-                ImageFilter.GaussianBlur(
-                    INNER_GLOW_BLUR
+                outer_glow = Image.new(
+                    "RGBA",
+                    (
+                        glow_size,
+                        glow_size
+                    ),
+                    (0, 0, 0, 0)
                 )
-            )
 
-            frame.paste(
-                inner_glow,
-                (
-                    x - inner_margin,
-                    y - inner_margin
-                ),
-                inner_glow
-            )
+                outer_draw = ImageDraw.Draw(
+                    outer_glow
+                )
+
+                outer_padding = 38
+
+                outer_draw.rounded_rectangle(
+                    (
+                        glow_margin - outer_padding,
+                        glow_margin - outer_padding,
+                        glow_margin + size + outer_padding,
+                        glow_margin + size + outer_padding
+                    ),
+                    radius=60,
+                    fill=(
+                        glow_color[0],
+                        glow_color[1],
+                        glow_color[2],
+                        OUTER_GLOW_ALPHA
+                    )
+                )
+
+                outer_glow = outer_glow.filter(
+                    ImageFilter.GaussianBlur(
+                        OUTER_GLOW_BLUR
+                    )
+                )
+
+                frame.paste(
+                    outer_glow,
+                    (
+                        x - glow_margin,
+                        y - glow_margin
+                    ),
+                    outer_glow
+                )
+
+
+                # =========================
+                # Inner glow
+                # =========================
+
+                inner_margin = 70
+
+                inner_size = (
+                    size
+                    +
+                    inner_margin * 2
+                )
+
+                inner_glow = Image.new(
+                    "RGBA",
+                    (
+                        inner_size,
+                        inner_size
+                    ),
+                    (0, 0, 0, 0)
+                )
+
+                inner_draw = ImageDraw.Draw(
+                    inner_glow
+                )
+
+                inner_padding = 18
+
+                inner_draw.rounded_rectangle(
+                    (
+                        inner_margin - inner_padding,
+                        inner_margin - inner_padding,
+                        inner_margin + size + inner_padding,
+                        inner_margin + size + inner_padding
+                    ),
+                    radius=48,
+                    fill=(
+                        glow_color[0],
+                        glow_color[1],
+                        glow_color[2],
+                        INNER_GLOW_ALPHA
+                    )
+                )
+
+                inner_glow = inner_glow.filter(
+                    ImageFilter.GaussianBlur(
+                        INNER_GLOW_BLUR
+                    )
+                )
+
+                frame.paste(
+                    inner_glow,
+                    (
+                        x - inner_margin,
+                        y - inner_margin
+                    ),
+                    inner_glow
+                )
 
 
             # =========================
