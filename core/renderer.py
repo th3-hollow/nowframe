@@ -4,7 +4,8 @@ from config import (
     SCREEN_WIDTH,
     SCREEN_HEIGHT,
     FONT_REGULAR,
-    FONT_BOLD
+    FONT_BOLD,
+    ALBUM_CACHE_PATH
 )
 
 
@@ -62,7 +63,7 @@ class Renderer:
         try:
 
             return Image.open(
-                "assets/images/album.jpg"
+                ALBUM_CACHE_PATH
             ).convert("RGB")
 
 
