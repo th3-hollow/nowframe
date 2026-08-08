@@ -37,3 +37,8 @@ clock_test.png
 
 # Runtime album artwork
 /assets/images/album.jpg
+
+# Local credential files
+/.env
+/nowframe.env
+/.nowframe_env
