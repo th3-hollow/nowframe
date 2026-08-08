@@ -24,14 +24,35 @@ class SpotifyPlugin:
             exist_ok=True
         )
 
+        auth_cache_path = os.path.abspath(
+            os.path.expanduser(
+                os.environ.get(
+                    "NOWFRAME_SPOTIFY_CACHE_PATH",
+                    "~/.nowframe_spotify_cache"
+                )
+            )
+        )
+
+        os.makedirs(
+            os.path.dirname(
+                auth_cache_path
+            ),
+            exist_ok=True
+        )
+
+        redirect_uri = os.environ.get(
+            "SPOTIPY_REDIRECT_URI",
+            "http://127.0.0.1:8888/callback"
+        )
+
         self.spotify = spotipy.Spotify(
             auth_manager=SpotifyOAuth(
                 scope=[
                     "user-read-playback-state",
                     "user-read-currently-playing"
                 ],
-                redirect_uri="http://127.0.0.1:8888/callback",
-                cache_path="/root/.nowframe_spotify_cache",
+                redirect_uri=redirect_uri,
+                cache_path=auth_cache_path,
                 open_browser=False
             )
         )
