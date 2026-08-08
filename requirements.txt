@@ -1,0 +1,4 @@
+numpy==2.5.1
+Pillow==12.3.0
+requests==2.34.2
+spotipy==2.26.0
