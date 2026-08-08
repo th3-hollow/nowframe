@@ -1,14 +1,20 @@
-import os
 import hashlib
+import os
+
 import requests
+
+from PIL import Image
 
 from config import (
     RUNTIME_CACHE_DIR,
-    SPOTIFY_CODE_WIDTH
+    SPOTIFY_CODE_WIDTH,
+    SPOTIFY_CODE_CACHE_LIMIT,
+    SPOTIFY_REQUEST_TIMEOUT
 )
 
 
-CACHE_DIR = RUNTIME_CACHE_DIR
+CACHE_PREFIX = "spotify_code_"
+CACHE_SUFFIX = ".png"
 
 
 class SpotifyCodeGenerator:
@@ -16,7 +22,7 @@ class SpotifyCodeGenerator:
     def __init__(self):
 
         os.makedirs(
-            CACHE_DIR,
+            RUNTIME_CACHE_DIR,
             exist_ok=True
         )
 
@@ -26,14 +32,98 @@ class SpotifyCodeGenerator:
 
     def _cache_path(self, uri):
 
+        # MD5 is used only for a short deterministic
+        # cache filename, not for security.
+
         key = hashlib.md5(
             uri.encode()
         ).hexdigest()
 
         return os.path.join(
-            CACHE_DIR,
-            f"spotify_code_{key}.png"
+            RUNTIME_CACHE_DIR,
+            (
+                CACHE_PREFIX
+                +
+                key
+                +
+                CACHE_SUFFIX
+            )
         )
+
+
+    def _valid_image(self, path):
+
+        try:
+
+            with Image.open(path) as image:
+
+                if image.format != "PNG":
+                    return False
+
+                image.verify()
+
+            return True
+
+        except Exception:
+
+            return False
+
+
+    def _cleanup_cache(self):
+
+        try:
+
+            paths = []
+
+            for name in os.listdir(
+                RUNTIME_CACHE_DIR
+            ):
+
+                if (
+                    name.startswith(
+                        CACHE_PREFIX
+                    )
+                    and
+                    name.endswith(
+                        CACHE_SUFFIX
+                    )
+                ):
+
+                    path = os.path.join(
+                        RUNTIME_CACHE_DIR,
+                        name
+                    )
+
+                    if os.path.isfile(path):
+
+                        paths.append(path)
+
+
+            paths.sort(
+                key=os.path.getmtime,
+                reverse=True
+            )
+
+            limit = max(
+                1,
+                SPOTIFY_CODE_CACHE_LIMIT
+            )
+
+            for stale_path in paths[limit:]:
+
+                try:
+
+                    os.remove(
+                        stale_path
+                    )
+
+                except OSError:
+
+                    pass
+
+        except OSError:
+
+            pass
 
 
     def get_code(self, uri):
@@ -42,7 +132,16 @@ class SpotifyCodeGenerator:
             return None
 
 
-        if uri == self.last_uri:
+        if (
+            uri == self.last_uri
+            and
+            self.last_path
+            and
+            os.path.exists(
+                self.last_path
+            )
+        ):
+
             return self.last_path
 
 
@@ -51,11 +150,34 @@ class SpotifyCodeGenerator:
 
         if os.path.exists(path):
 
-            self.last_uri = uri
-            self.last_path = path
+            if self._valid_image(path):
 
-            return path
+                os.utime(
+                    path,
+                    None
+                )
 
+                self.last_uri = uri
+                self.last_path = path
+
+                self._cleanup_cache()
+
+                return path
+
+            try:
+
+                os.remove(path)
+
+            except OSError:
+
+                pass
+
+
+        temp_path = (
+            path
+            +
+            ".tmp"
+        )
 
         print(
             "Generating Spotify Code..."
@@ -64,7 +186,6 @@ class SpotifyCodeGenerator:
 
         try:
 
-            # Spotify Code endpoint
             url = (
                 "https://scannables.scdn.co/uri/plain/png/"
                 "000000/"
@@ -73,42 +194,68 @@ class SpotifyCodeGenerator:
                 f"{uri}"
             )
 
-
             response = requests.get(
                 url,
-                timeout=10
+                timeout=SPOTIFY_REQUEST_TIMEOUT
             )
 
             response.raise_for_status()
 
-
             with open(
-                path,
+                temp_path,
                 "wb"
-            ) as f:
+            ) as file:
 
-                f.write(
+                file.write(
                     response.content
                 )
 
+
+            if not self._valid_image(
+                temp_path
+            ):
+
+                raise ValueError(
+                    "Downloaded Spotify Code is not a valid PNG"
+                )
+
+
+            os.replace(
+                temp_path,
+                path
+            )
+
+            self.last_uri = uri
+            self.last_path = path
+
+            self._cleanup_cache()
 
             print(
                 "Spotify Code generated"
             )
 
-
-            self.last_uri = uri
-            self.last_path = path
-
-
             return path
 
 
-        except Exception as e:
+        except Exception as error:
+
+            try:
+
+                if os.path.exists(
+                    temp_path
+                ):
+
+                    os.remove(
+                        temp_path
+                    )
+
+            except OSError:
+
+                pass
 
             print(
                 "Spotify Code error:",
-                e
+                error
             )
 
             return None

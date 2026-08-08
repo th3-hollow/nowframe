@@ -55,6 +55,11 @@ SPOTIFY_CODE_ENABLED = True
 SPOTIFY_CODE_WIDTH = 350
 SPOTIFY_CODE_HEIGHT = 80
 
+# Maximum number of generated codes retained in
+# the runtime cache. Oldest entries are removed first.
+
+SPOTIFY_CODE_CACHE_LIMIT = 100
+
 # Position:
 # "above_progress"
 # "bottom_center"
