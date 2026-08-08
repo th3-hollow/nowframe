@@ -27,6 +27,10 @@ from config import (
     ARTIST_FONT_SIZE,
     TITLE_Y,
     ARTIST_Y,
+    SPOTIFY_CODE_ENABLED,
+    SPOTIFY_CODE_WIDTH,
+    SPOTIFY_CODE_HEIGHT,
+    SPOTIFY_CODE_POSITION,
     PROGRESS_WIDTH,
     PROGRESS_HEIGHT,
     PROGRESS_BACKGROUND,
@@ -657,6 +661,96 @@ class PremiumRenderer:
         )
 
 
+
+    def draw_spotify_code(
+        self,
+        image,
+        spotify_code_path
+    ):
+
+        if (
+            not SPOTIFY_CODE_ENABLED
+            or
+            not spotify_code_path
+        ):
+
+            return
+
+
+        try:
+
+            with Image.open(
+                spotify_code_path
+            ) as source:
+
+                spotify_code = (
+                    source.convert("RGB")
+                )
+
+
+            spotify_code = ImageOps.contain(
+                spotify_code,
+                (
+                    SPOTIFY_CODE_WIDTH,
+                    SPOTIFY_CODE_HEIGHT
+                ),
+                method=Image.Resampling.LANCZOS
+            )
+
+
+            code_x = (
+                self.width
+                -
+                spotify_code.width
+            ) // 2
+
+
+            if (
+                SPOTIFY_CODE_POSITION
+                ==
+                "bottom_center"
+            ):
+
+                code_y = (
+                    self.height
+                    -
+                    spotify_code.height
+                    -
+                    30
+                )
+
+            else:
+
+                _, bar_y = (
+                    self.layout.progress_position()
+                )
+
+                code_y = (
+                    bar_y
+                    -
+                    spotify_code.height
+                    -
+                    15
+                )
+
+
+            image.paste(
+                spotify_code,
+                (
+                    code_x,
+                    code_y
+                )
+            )
+
+
+        except Exception as e:
+
+            print(
+                "Spotify Code render error:",
+                e
+            )
+
+
     def draw_progress(
         self,
         image,
@@ -745,7 +839,8 @@ class PremiumRenderer:
         album_path,
         title,
         artist,
-        progress
+        progress,
+        spotify_code_path=None
     ):
 
         frame = self.create_frame()
@@ -819,6 +914,12 @@ class PremiumRenderer:
                 205
             ),
             anchor="mm"
+        )
+
+
+        self.draw_spotify_code(
+            frame,
+            spotify_code_path
         )
 
 

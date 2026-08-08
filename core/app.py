@@ -24,6 +24,7 @@ from core.renderer import Renderer
 
 if RENDERER_MODE == "premium":
     from core.v2.renderer import PremiumRenderer
+    from core.v2.spotify_code import SpotifyCodeGenerator
 
 
 class NowFrameApp:
@@ -55,6 +56,10 @@ class NowFrameApp:
                 SCREEN_HEIGHT,
                 FONT_REGULAR,
                 FONT_BOLD
+            )
+
+            self.spotify_code = (
+                SpotifyCodeGenerator()
             )
 
         else:
@@ -109,6 +114,9 @@ class NowFrameApp:
                 spotify_data["artist"],
                 spotify_data.get(
                     "album_url"
+                ),
+                spotify_data.get(
+                    "uri"
                 )
             )
 
@@ -216,6 +224,14 @@ class NowFrameApp:
                 "premium"
             ):
 
+                spotify_code_path = (
+                    self.spotify_code.get_code(
+                        spotify_data.get(
+                            "uri"
+                        )
+                    )
+                )
+
                 frame = (
                     self.renderer.render(
                         ALBUM_CACHE_PATH,
@@ -227,7 +243,10 @@ class NowFrameApp:
                         ],
                         spotify_data[
                             "progress"
-                        ]
+                        ],
+                        spotify_code_path=(
+                            spotify_code_path
+                        )
                     )
                 )
 
