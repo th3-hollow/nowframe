@@ -1,21 +1,28 @@
+import os
 import time
+
 import requests
 import spotipy
 
+from PIL import Image
 from spotipy.oauth2 import SpotifyOAuth
 
 from config import (
     SPOTIFY_POLL_INTERVAL,
-    SPOTIFY_REQUEST_TIMEOUT
+    SPOTIFY_REQUEST_TIMEOUT,
+    RUNTIME_CACHE_DIR,
+    ALBUM_CACHE_PATH
 )
-
-
-ALBUM_PATH = "assets/images/album.jpg"
 
 
 class SpotifyPlugin:
 
     def __init__(self):
+
+        os.makedirs(
+            RUNTIME_CACHE_DIR,
+            exist_ok=True
+        )
 
         self.spotify = spotipy.Spotify(
             auth_manager=SpotifyOAuth(
@@ -55,6 +62,12 @@ class SpotifyPlugin:
         if url == self.last_image:
             return
 
+        temp_path = (
+            ALBUM_CACHE_PATH
+            +
+            ".tmp"
+        )
+
         try:
 
             response = requests.get(
@@ -65,10 +78,24 @@ class SpotifyPlugin:
             response.raise_for_status()
 
             with open(
-                ALBUM_PATH,
+                temp_path,
                 "wb"
-            ) as f:
-                f.write(response.content)
+            ) as file:
+
+                file.write(
+                    response.content
+                )
+
+            with Image.open(
+                temp_path
+            ) as image:
+
+                image.verify()
+
+            os.replace(
+                temp_path,
+                ALBUM_CACHE_PATH
+            )
 
             self.last_image = url
 
@@ -80,6 +107,20 @@ class SpotifyPlugin:
                 "Album download error:",
                 e
             )
+
+            try:
+
+                if os.path.exists(
+                    temp_path
+                ):
+
+                    os.remove(
+                        temp_path
+                    )
+
+            except Exception:
+
+                pass
 
 
     def poll_spotify(self):
