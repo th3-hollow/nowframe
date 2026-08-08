@@ -1,17 +1,25 @@
 import numpy as np
 
-
-fb = open(
-    "/dev/fb0",
-    "r+b",
-    buffering=0
+from config import (
+    SCREEN_WIDTH,
+    SCREEN_HEIGHT,
+    FRAMEBUFFER_DEVICE
 )
 
 
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
 BYTES_PER_PIXEL = 2
-STRIDE = 3840
+STRIDE = (
+    SCREEN_WIDTH
+    *
+    BYTES_PER_PIXEL
+)
+
+
+fb = open(
+    FRAMEBUFFER_DEVICE,
+    "r+b",
+    buffering=0
+)
 
 
 def rgb888_to_rgb565(img):

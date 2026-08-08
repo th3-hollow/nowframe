@@ -10,6 +10,11 @@
 SCREEN_WIDTH = 1920
 SCREEN_HEIGHT = 1080
 
+# Linux framebuffer device.
+# NowFrame currently expects 16-bit RGB565 output.
+
+FRAMEBUFFER_DEVICE = "/dev/fb0"
+
 # Options:
 # "premium"
 # "classic"
