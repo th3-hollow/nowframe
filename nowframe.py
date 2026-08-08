@@ -1,11 +1,6 @@
-import sys
 import time
 
 from PIL import Image
-
-sys.path.append(
-    "/root/spotify-display"
-)
 
 from core.app import NowFrameApp
 
