@@ -34,3 +34,6 @@ clock_test.png
 # Test images
 *_test.jpg
 *_test.png
+
+# Runtime album artwork
+/assets/images/album.jpg
