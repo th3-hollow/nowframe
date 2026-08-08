@@ -5,7 +5,8 @@ from PIL import (
     ImageDraw,
     ImageFont,
     ImageOps,
-    ImageFilter
+    ImageFilter,
+    ImageStat
 )
 
 from layouts.premium import PremiumLayout
@@ -679,17 +680,22 @@ class PremiumRenderer:
 
         try:
 
+            # The downloaded Spotify Code uses
+            # white artwork on a black background.
+            # Use its brightness as an alpha mask
+            # so the rectangle becomes transparent.
+
             with Image.open(
                 spotify_code_path
             ) as source:
 
-                spotify_code = (
-                    source.convert("RGB")
+                code_mask = (
+                    source.convert("L")
                 )
 
 
-            spotify_code = ImageOps.contain(
-                spotify_code,
+            code_mask = ImageOps.contain(
+                code_mask,
                 (
                     SPOTIFY_CODE_WIDTH,
                     SPOTIFY_CODE_HEIGHT
@@ -701,7 +707,7 @@ class PremiumRenderer:
             code_x = (
                 self.width
                 -
-                spotify_code.width
+                code_mask.width
             ) // 2
 
 
@@ -714,7 +720,7 @@ class PremiumRenderer:
                 code_y = (
                     self.height
                     -
-                    spotify_code.height
+                    code_mask.height
                     -
                     30
                 )
@@ -728,10 +734,63 @@ class PremiumRenderer:
                 code_y = (
                     bar_y
                     -
-                    spotify_code.height
+                    code_mask.height
                     -
                     15
                 )
+
+
+            # Measure the actual background underneath
+            # the code. Use black over bright backgrounds
+            # and white over dark backgrounds.
+
+            background_region = image.crop(
+                (
+                    code_x,
+                    code_y,
+                    code_x + code_mask.width,
+                    code_y + code_mask.height
+                )
+            ).convert("L")
+
+            average_brightness = (
+                ImageStat.Stat(
+                    background_region
+                ).mean[0]
+            )
+
+
+            if average_brightness >= 145:
+
+                code_color = (
+                    0,
+                    0,
+                    0
+                )
+
+            else:
+
+                code_color = (
+                    255,
+                    255,
+                    255
+                )
+
+
+            spotify_code = Image.new(
+                "RGBA",
+                code_mask.size,
+                (
+                    code_color[0],
+                    code_color[1],
+                    code_color[2],
+                    0
+                )
+            )
+
+            spotify_code.putalpha(
+                code_mask
+            )
 
 
             image.paste(
@@ -739,7 +798,8 @@ class PremiumRenderer:
                 (
                     code_x,
                     code_y
-                )
+                ),
+                spotify_code
             )
 
 
