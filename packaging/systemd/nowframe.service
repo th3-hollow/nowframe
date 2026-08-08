@@ -1,0 +1,32 @@
+[Unit]
+Description=NowFrame Spotify Display
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+User=nowframe
+Group=nowframe
+SupplementaryGroups=video
+
+WorkingDirectory=/opt/nowframe
+EnvironmentFile=/etc/nowframe.env
+Environment=HOME=/var/lib/nowframe
+Environment=PYTHONUNBUFFERED=1
+
+# Disable the framebuffer console cursor before starting.
+# The "+" prefix lets this preparation step run with
+# system privileges while NowFrame itself remains unprivileged.
+ExecStartPre=+/bin/sh -c 'echo 0 > /sys/class/graphics/fbcon/cursor_blink'
+
+ExecStart=/opt/nowframe/.venv/bin/python -u /opt/nowframe/nowframe.py
+
+Restart=on-failure
+RestartSec=5
+
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
