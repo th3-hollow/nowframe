@@ -38,6 +38,30 @@ RUNTIME_CACHE_DIR = "/tmp/nowframe"
 ALBUM_CACHE_PATH = "/tmp/nowframe/album.jpg"
 
 # ==========================
+# SPOTIFY CODE
+# ==========================
+
+# Show Spotify Code below artist name.
+
+SPOTIFY_CODE_ENABLED = True
+
+# Size of the Spotify Code graphic.
+
+SPOTIFY_CODE_WIDTH = 350
+SPOTIFY_CODE_HEIGHT = 80
+
+# Position:
+# "above_progress"
+# "bottom_center"
+
+SPOTIFY_CODE_POSITION = "above_progress"
+
+# Show small Spotify Code helper text.
+
+SPOTIFY_CODE_LABEL = False
+
+
+# ==========================
 # IDLE / CLOCK
 # ==========================
 
