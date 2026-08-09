@@ -326,3 +326,11 @@ A full SD-card image can be written to a replacement card using an imaging utili
 The replacement card must contain at least as many actual bytes as the original card. Two cards with the same advertised capacity can differ slightly, so an identical model or larger card is safest.
 
 SD-card images contain credentials and authentication data. Keep them private.
+
+## Spotify quota or rate limit reached
+
+When NowFrame reports that a Spotify quota or rate limit was reached, Spotify has temporarily refused further Web API requests. NowFrame automatically honors the Retry-After response and pauses API polling for the required period.
+
+Do not repeatedly restart the service or create another client ID to evade the limit. Spotify Development Mode quotas are shared at the developer-account level. Wait for the reported cooldown to expire and keep SPOTIFY_POLL_INTERVAL at the recommended 10.0 seconds or higher.
+
+The progress bar is calculated locally, so the longer polling interval does not make its animation less smooth.

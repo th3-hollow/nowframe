@@ -29,7 +29,7 @@ RENDERER_MODE = "premium"
 # How often NowFrame asks Spotify for fresh playback state.
 # Progress is interpolated locally between polls.
 
-SPOTIFY_POLL_INTERVAL = 2.0
+SPOTIFY_POLL_INTERVAL = 10.0
 
 # Network timeout when downloading album artwork.
 

@@ -5,6 +5,7 @@ import requests
 import spotipy
 
 from PIL import Image
+from spotipy.exceptions import SpotifyException
 from spotipy.oauth2 import SpotifyOAuth
 
 from config import (
@@ -54,7 +55,10 @@ class SpotifyPlugin:
                 redirect_uri=redirect_uri,
                 cache_path=auth_cache_path,
                 open_browser=False
-            )
+            ),
+            requests_timeout=SPOTIFY_REQUEST_TIMEOUT,
+            retries=0,
+            status_retries=0
         )
 
         self.last_image = None
@@ -74,8 +78,9 @@ class SpotifyPlugin:
         self.duration_ms = 1
         self.progress_timestamp = time.monotonic()
 
-        # Network recovery state
+        # Network recovery and quota state
         self.spotify_available = True
+        self.retry_after_until = 0.0
 
 
     def download_album(self, url):
@@ -146,6 +151,8 @@ class SpotifyPlugin:
 
     def poll_spotify(self):
 
+        now = time.monotonic()
+
         try:
 
             current = self.spotify.current_playback()
@@ -154,22 +161,89 @@ class SpotifyPlugin:
                 print("Spotify connection restored")
 
             self.spotify_available = True
+            self.retry_after_until = 0.0
 
 
-        except Exception as e:
+        except SpotifyException as error:
 
-            if self.spotify_available:
+            if error.http_status == 429:
+
+                retry_header = (
+                    error.headers.get(
+                        "Retry-After"
+                    )
+                    or
+                    error.headers.get(
+                        "retry-after"
+                    )
+                    or
+                    60
+                )
+
+                try:
+
+                    retry_after = max(
+                        60,
+                        int(
+                            float(
+                                retry_header
+                            )
+                        )
+                    )
+
+                except (
+                    TypeError,
+                    ValueError
+                ):
+
+                    retry_after = 60
+
+
+                self.retry_after_until = (
+                    now
+                    +
+                    retry_after
+                )
+
+                reason = (
+                    f" ({error.reason})"
+                    if error.reason
+                    else
+                    ""
+                )
+
+                print(
+                    "Spotify quota/rate limit reached"
+                    f"{reason}. "
+                    "API polling paused for "
+                    f"{retry_after} seconds."
+                )
+
+            elif self.spotify_available:
+
                 print(
                     "Spotify unavailable:",
-                    e
+                    error
                 )
+
 
             self.spotify_available = False
 
             return
 
 
-        now = time.monotonic()
+        except Exception as error:
+
+            if self.spotify_available:
+
+                print(
+                    "Spotify unavailable:",
+                    error
+                )
+
+            self.spotify_available = False
+
+            return
 
 
         if not current or not current.get("item"):
@@ -271,9 +345,15 @@ class SpotifyPlugin:
 
 
         if (
-            self.cached_data is None
-            or
-            now - self.last_poll >= self.poll_interval
+            now >= self.retry_after_until
+            and
+            (
+                self.cached_data is None
+                or
+                now - self.last_poll
+                >=
+                self.poll_interval
+            )
         ):
 
             self.poll_spotify()

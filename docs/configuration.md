@@ -39,13 +39,13 @@ Renderer modes:
 ## Spotify
 
 ```python
-SPOTIFY_POLL_INTERVAL = 2.0
+SPOTIFY_POLL_INTERVAL = 10.0
 SPOTIFY_REQUEST_TIMEOUT = 10
 ```
 
 `SPOTIFY_POLL_INTERVAL` controls how frequently playback state is requested from Spotify. Progress is calculated locally between requests.
 
-Reducing the interval increases Spotify API traffic. Increasing it delays track and playback-state changes.
+The default 10-second interval is recommended. Reducing it increases Spotify API traffic and can exhaust Spotify Development Mode quotas. Increasing it delays track and playback-state changes, while the progress bar remains smooth because it is calculated locally.
 
 `SPOTIFY_REQUEST_TIMEOUT` applies to network downloads such as album artwork and Spotify Codes.
 
