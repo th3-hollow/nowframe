@@ -4,6 +4,8 @@ A premium, full-screen Spotify now-playing display for Raspberry Pi and direct L
 
 NowFrame turns a Raspberry Pi and HDMI display into a dedicated music display with album artwork, adaptive backgrounds, smooth transitions, live progress, idle clock modes, and scannable Spotify Codes.
 
+![NowFrame Premium Spotify display](docs/images/nowframe-display.png)
+
 ## Features
 
 - Premium and Classic renderer modes
