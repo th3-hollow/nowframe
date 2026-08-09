@@ -334,3 +334,11 @@ When NowFrame reports that a Spotify quota or rate limit was reached, Spotify ha
 Do not repeatedly restart the service or create another client ID to evade the limit. Spotify Development Mode quotas are shared at the developer-account level. Wait for the reported cooldown to expire and keep SPOTIFY_POLL_INTERVAL at the recommended 10.0 seconds or higher.
 
 The progress bar is calculated locally, so the longer polling interval does not make its animation less smooth.
+
+## Display becomes completely black while NowFrame is running
+
+If the service is active and its logs show normal rendering, check the framebuffer blanking state with `cat /sys/class/graphics/fb0/blank`.
+
+A value of `4` means Linux has powered down the framebuffer. Temporarily wake it with `echo 0 > /sys/class/graphics/fb0/blank`.
+
+To prevent this after reboot, add `consoleblank=0` to the existing single line in `/boot/firmware/cmdline.txt`. Some distributions use `/boot/cmdline.txt` instead. Back up the file first, keep all boot options on one line, and reboot after editing.

@@ -30,9 +30,9 @@ RENDERER_MODE = "premium"
 # paused, and idle states. Progress is interpolated
 # locally between polls.
 
-SPOTIFY_POLL_INTERVAL = 10.0
-SPOTIFY_PAUSED_POLL_INTERVAL = 30.0
-SPOTIFY_IDLE_POLL_INTERVAL = 60.0
+SPOTIFY_POLL_INTERVAL = 5.0
+SPOTIFY_PAUSED_POLL_INTERVAL = 10.0
+SPOTIFY_IDLE_POLL_INTERVAL = 30.0
 
 # Network timeout when downloading album artwork.
 
