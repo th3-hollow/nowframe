@@ -10,6 +10,8 @@ from spotipy.oauth2 import SpotifyOAuth
 
 from config import (
     SPOTIFY_POLL_INTERVAL,
+    SPOTIFY_PAUSED_POLL_INTERVAL,
+    SPOTIFY_IDLE_POLL_INTERVAL,
     SPOTIFY_REQUEST_TIMEOUT,
     RUNTIME_CACHE_DIR,
     ALBUM_CACHE_PATH
@@ -339,6 +341,20 @@ class SpotifyPlugin:
 
 
 
+    def _current_poll_interval(self):
+
+        if self.cached_data is None:
+            return self.poll_interval
+
+        if self.cached_data.get("playing"):
+            return self.poll_interval
+
+        if self.cached_data.get("uri"):
+            return SPOTIFY_PAUSED_POLL_INTERVAL
+
+        return SPOTIFY_IDLE_POLL_INTERVAL
+
+
     def get_data(self):
 
         now = time.monotonic()
@@ -352,7 +368,7 @@ class SpotifyPlugin:
                 or
                 now - self.last_poll
                 >=
-                self.poll_interval
+                self._current_poll_interval()
             )
         ):
 

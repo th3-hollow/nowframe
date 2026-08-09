@@ -40,10 +40,12 @@ Renderer modes:
 
 ```python
 SPOTIFY_POLL_INTERVAL = 10.0
+SPOTIFY_PAUSED_POLL_INTERVAL = 30.0
+SPOTIFY_IDLE_POLL_INTERVAL = 60.0
 SPOTIFY_REQUEST_TIMEOUT = 10
 ```
 
-`SPOTIFY_POLL_INTERVAL` controls how frequently playback state is requested from Spotify. Progress is calculated locally between requests.
+`SPOTIFY_POLL_INTERVAL` is used while music is playing. The paused and idle settings progressively reduce API traffic when frequent updates are unnecessary. Progress is calculated locally between requests.
 
 The default 10-second interval is recommended. Reducing it increases Spotify API traffic and can exhaust Spotify Development Mode quotas. Increasing it delays track and playback-state changes, while the progress bar remains smooth because it is calculated locally.
 
