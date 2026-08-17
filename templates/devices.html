@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Devices{% endblock %}
+{% block content %}
+<section>
+<h2>Spotify Connect discovery</h2>
+<span class="help">
+Refresh asks Spotify which devices are currently available to your
+account. A phone, computer, speaker, or TV may only appear while its
+Spotify app is open or after it was used recently. Previously found
+devices remain listed when offline.
+</span>
+
+<form method="post" action="{{ url_for('refresh_devices') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<button type="submit" class="secondary">Refresh devices</button>
+</form>
+</section>
+
+<section>
+<h2>Allowed playback devices</h2>
+<span class="help">
+NowFrame displays playback only when the active Spotify device is
+checked below. Unchecked devices can still play music, but NowFrame
+hides their playback. If nothing is checked, all playback is hidden.
+</span>
+
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+{% for device in devices %}
+<label class="device check">
+<input type="checkbox"
+name="allowed_devices"
+value="{{ device.name }}"
+{% if device.allowed %}checked{% endif %}>
+
+<span>
+<span class="device-title">{{ device.name }}</span><br>
+<span class="badge">{{ device.type }}</span>
+
+{% if device.active %}
+<span class="badge active">Active now</span>
+{% endif %}
+
+{% if device.restricted %}
+<span class="badge">Restricted</span>
+{% endif %}
+
+{% if device.last_seen %}
+<span class="help">Last discovered: {{ device.last_seen }}</span>
+{% else %}
+<span class="help">Configured previously; not yet discovered.</span>
+{% endif %}
+</span>
+</label>
+{% else %}
+<p>No devices have been configured or discovered.</p>
+{% endfor %}
+
+<button type="submit" class="save">
+Save allowed devices and restart NowFrame
+</button>
+</form>
+</section>
+{% endblock %}

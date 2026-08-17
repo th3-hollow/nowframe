@@ -132,6 +132,20 @@ class SpotifyCodeGenerator:
             return None
 
 
+        if uri.startswith("spotify:local:"):
+
+            if uri != self.last_uri:
+
+                print(
+                    "Skipping Spotify Code for local track"
+                )
+
+            self.last_uri = uri
+            self.last_path = None
+
+            return None
+
+
         if (
             uri == self.last_uri
             and

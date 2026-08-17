@@ -1,3 +1,4 @@
+import os
 import time
 
 from core.state import DisplayState
@@ -25,6 +26,21 @@ from core.renderer import Renderer
 if RENDERER_MODE == "premium":
     from core.v2.renderer import PremiumRenderer
     from core.v2.spotify_code import SpotifyCodeGenerator
+
+
+def environment_enabled(name, default=False):
+
+    value = os.environ.get(name)
+
+    if value is None:
+        return bool(default)
+
+    return value.strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on"
+    )
 
 
 class NowFrameApp:
@@ -89,8 +105,32 @@ class NowFrameApp:
         self.pause_started = None
         self.idle_started = None
 
+        self.away_mode = environment_enabled(
+            "NOWFRAME_AWAY_MODE"
+        )
+
 
     def create_update(self):
+
+        if self.away_mode:
+
+            if self.last_mode == "away":
+                return None
+
+            print("Away mode enabled")
+
+            frame = self.renderer.create_frame()
+
+            self.last_mode = "away"
+            self.last_clock_text = None
+            self.pause_started = None
+            self.idle_started = None
+
+            return {
+                "type": "full",
+                "image": frame,
+                "transition": "mode"
+            }
 
         spotify_data = (
             self.spotify.get_data()
@@ -132,7 +172,8 @@ class NowFrameApp:
                 self.last_mode
                 in (
                     "clock",
-                    "black"
+                    "black",
+                    "keep_album"
                 )
             )
 
@@ -332,7 +373,8 @@ class NowFrameApp:
             self.last_mode
             in (
                 "clock",
-                "black"
+                "black",
+                "keep_album"
             )
         ):
 
@@ -394,6 +436,29 @@ class NowFrameApp:
                     "image": frame,
                     "transition": "mode"
                 }
+
+
+        # =================================
+        # KEEP LAST ALBUM ART
+        # =================================
+
+        if (
+            IDLE_DISPLAY_MODE
+            ==
+            "keep_album"
+        ):
+
+            if self.last_mode != "keep_album":
+
+                print(
+                    "Idle mode - keeping last album art"
+                )
+
+            self.last_mode = "keep_album"
+            self.last_clock_text = None
+            self.pause_started = None
+
+            return None
 
 
         # =================================

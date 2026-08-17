@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Display{% endblock %}
+{% block content %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<section>
+<h2>Presence</h2>
+<label class="check">
+<input type="checkbox" name="away_mode"
+{% if away_mode %}checked{% endif %}>
+<span>
+Away mode
+<span class="help">
+Switches the display to black after saving. Spotify is not polled
+while NowFrame remains in Away mode.
+</span>
+</span>
+</label>
+</section>
+
+<section>
+<h2>Idle behavior</h2>
+
+<label>
+Idle display
+<select name="idle_mode">
+{% for value, label in (
+    ("clock_album", "Clock over last album art"),
+    ("clock_black", "Clock on black background"),
+    ("keep_album", "Keep last album art unchanged"),
+    ("black", "Black screen")
+) %}
+<option value="{{ value }}"
+{% if settings.NOWFRAME_IDLE_DISPLAY_MODE == value %}selected{% endif %}>
+{{ label }}
+</option>
+{% endfor %}
+</select>
+<span class="help">
+Chooses what replaces the playing screen after playback pauses.
+Clock over album keeps the generated background; clock on black
+removes it; keep album changes nothing; black clears the screen.
+</span>
+</label>
+
+<label class="check">
+<input type="checkbox" name="clock_enabled"
+{% if clock_enabled %}checked{% endif %}>
+<span>
+Enable clock
+<span class="help">
+Allows clock-based idle modes to draw and update the current time.
+Disable it if NowFrame should never render a clock.
+</span>
+</span>
+</label>
+
+<label>
+Pause grace period (seconds)
+<input type="number" name="pause_grace"
+value="{{ settings.NOWFRAME_PAUSE_GRACE_SECONDS }}"
+min="0" max="3600" step="0.1" required>
+<span class="help">
+How long the current album screen remains after pausing before the
+selected idle mode begins. Zero changes immediately.
+</span>
+</label>
+
+<label>
+Idle-to-black timeout
+<input type="text" name="idle_black_timeout"
+value="{{ settings.NOWFRAME_IDLE_BLACK_TIMEOUT }}"
+placeholder="600 or never" required>
+<span class="help">
+After idle mode begins, this many additional seconds pass before the
+screen becomes fully black. Enter “never” to keep the selected idle
+display indefinitely.
+</span>
+</label>
+
+<label>
+Clock background darkening (0–1)
+<input type="number" name="clock_darken"
+value="{{ settings.NOWFRAME_CLOCK_BACKGROUND_DARKEN }}"
+min="0" max="1" step="0.05" required>
+<span class="help">
+Controls how dark album artwork becomes behind the clock. Zero leaves
+it unchanged; one makes the background fully black.
+</span>
+</label>
+</section>
+
+<button type="submit" class="save">
+Save display settings and restart NowFrame
+</button>
+</form>
+{% endblock %}

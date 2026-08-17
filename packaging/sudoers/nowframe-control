@@ -1,0 +1,2 @@
+nowframe-control ALL=(root) NOPASSWD: /usr/local/sbin/nowframe-control-helper validate
+nowframe-control ALL=(root) NOPASSWD: /usr/local/sbin/nowframe-control-helper restart

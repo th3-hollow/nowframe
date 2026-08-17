@@ -1,0 +1,63 @@
+#!/bin/sh
+set -eu
+
+action="${1:-}"
+
+case "$action" in
+    validate)
+        pending="/etc/nowframe/.control.env.pending"
+
+        if [ ! -f "$pending" ]; then
+            echo "Pending settings file is missing" >&2
+            exit 1
+        fi
+
+        set -a
+        . /root/.nowframe_env
+        . "$pending"
+        set +a
+
+        export NOWFRAME_SPOTIFY_USAGE_LOG_PATH=\
+/var/lib/nowframe/spotify_api_usage.csv
+
+        cd /root/spotify-display/nowframe
+
+        exec \
+            /root/spotify-display/spotify-env/bin/python \
+            -c 'import config'
+        ;;
+
+    restart)
+        systemctl restart nowframe.service
+
+        attempts=0
+
+        while [ "$attempts" -lt 20 ]; do
+            state="$(
+                systemctl is-active \
+                    nowframe.service \
+                    2>/dev/null \
+                    || true
+            )"
+
+            if [ "$state" = "active" ]; then
+                exit 0
+            fi
+
+            if [ "$state" = "failed" ]; then
+                exit 1
+            fi
+
+            attempts=$((attempts + 1))
+            sleep 0.5
+        done
+
+        echo "NowFrame did not become active" >&2
+        exit 1
+        ;;
+
+    *)
+        echo "Usage: $0 validate|restart" >&2
+        exit 2
+        ;;
+esac

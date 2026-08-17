@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}NowFrame{% endblock %} — NowFrame Control</title>
+<link rel="stylesheet"
+href="{{ url_for('static', filename='style.css') }}">
+{% block head %}{% endblock %}
+</head>
+<body>
+<main>
+<header>
+<h1>NowFrame Control</h1>
+<p class="subtitle">Local settings and monitoring</p>
+</header>
+
+<nav class="tabs">
+<a href="{{ url_for('status') }}"
+class="{{ 'active' if page_name == 'status' else '' }}">Status</a>
+<a href="{{ url_for('devices') }}"
+class="{{ 'active' if page_name == 'devices' else '' }}">Devices</a>
+<a href="{{ url_for('display') }}"
+class="{{ 'active' if page_name == 'display' else '' }}">Display</a>
+<a href="{{ url_for('background') }}"
+class="{{ 'active' if page_name == 'background' else '' }}">Background</a>
+<a href="{{ url_for('polling') }}"
+class="{{ 'active' if page_name == 'polling' else '' }}">Polling</a>
+<a href="{{ url_for('plugins') }}"
+class="{{ 'active' if page_name == 'plugins' else '' }}">Plugins</a>
+</nav>
+
+{% if message %}
+<p class="message {{ 'error' if error else '' }}">
+{{ message }}
+</p>
+{% endif %}
+
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

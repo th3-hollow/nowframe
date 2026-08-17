@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Polling{% endblock %}
+
+{% block head %}
+<script>
+window.NOWFRAME_POLLING_PROFILES = {{ profiles | tojson }};
+</script>
+<script defer
+src="{{ url_for('static', filename='polling.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<section>
+<h2>Polling profile</h2>
+
+<label>
+Profile
+<select id="polling_profile"
+name="polling_profile"
+onchange="applyProfile()">
+{% for value, label in (
+    ("responsive", "Responsive — 3 / 8 / 12 / 20"),
+    ("balanced", "Balanced — 4 / 10 / 15 / 30"),
+    ("low_usage", "Low API usage — 8 / 20 / 60 / 120"),
+    ("custom", "Custom")
+) %}
+<option value="{{ value }}"
+{% if settings.NOWFRAME_POLLING_PROFILE == value %}selected{% endif %}>
+{{ label }}
+</option>
+{% endfor %}
+</select>
+
+<span class="help">
+Responsive detects Spotify changes sooner but makes more API
+requests. Balanced is the tested default. Low API Usage reduces
+requests but takes longer to notice changes. Custom unlocks all
+four interval fields.
+</span>
+</label>
+</section>
+
+<section>
+<h2>Intervals in seconds</h2>
+
+<label>
+Playing
+<input id="playing" type="number" name="playing"
+value="{{ settings.NOWFRAME_SPOTIFY_POLL_INTERVAL }}"
+min="1" max="3600" step="0.1">
+<span class="help">
+How often NowFrame checks Spotify while approved-device playback is
+active. Progress animation between checks remains local and smooth.
+</span>
+</label>
+
+<label>
+Paused
+<input id="paused" type="number" name="paused"
+value="{{ settings.NOWFRAME_SPOTIFY_PAUSED_POLL_INTERVAL }}"
+min="1" max="3600" step="0.1">
+<span class="help">
+How often Spotify is checked while a track exists but playback is
+paused. Lower values notice resumed playback sooner.
+</span>
+</label>
+
+<label>
+Idle
+<input id="idle" type="number" name="idle"
+value="{{ settings.NOWFRAME_SPOTIFY_IDLE_POLL_INTERVAL }}"
+min="1" max="3600" step="0.1">
+<span class="help">
+How often Spotify is checked when no current track or playback
+device is available. Lower values wake the display sooner.
+</span>
+</label>
+
+<label>
+Unapproved device
+<input id="unapproved" type="number" name="unapproved"
+value="{{ settings.NOWFRAME_SPOTIFY_UNAPPROVED_POLL_INTERVAL }}"
+min="1" max="3600" step="0.1">
+<span class="help">
+How often Spotify is checked while playback occurs on a device that
+is not allowed on the Devices tab.
+</span>
+</label>
+</section>
+
+<button type="submit" class="save">
+Save polling settings and restart NowFrame
+</button>
+</form>
+{% endblock %}

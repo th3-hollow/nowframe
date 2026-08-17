@@ -18,6 +18,9 @@ NowFrame turns a Raspberry Pi and HDMI display into a dedicated music display wi
 - Validated Spotify Code caching
 - Idle clock and automatic black-screen modes
 - Recovery from temporary Spotify or network failures
+- Adaptive Spotify polling and quota cooldown handling
+- Optional approved playback-device filtering
+- Persistent daily Spotify API usage statistics
 - Direct RGB565 framebuffer output
 - Automatic startup through systemd
 - Centralized configuration in `config.py`

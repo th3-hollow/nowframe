@@ -42,12 +42,27 @@ Renderer modes:
 SPOTIFY_POLL_INTERVAL = 5.0
 SPOTIFY_PAUSED_POLL_INTERVAL = 10.0
 SPOTIFY_IDLE_POLL_INTERVAL = 30.0
+
+SPOTIFY_DEVICE_FILTER_ENABLED = False
+SPOTIFY_ALLOWED_DEVICES = ()
+SPOTIFY_UNAPPROVED_DEVICE_POLL_INTERVAL = 30.0
+
+SPOTIFY_USAGE_LOG_ENABLED = True
+SPOTIFY_USAGE_LOG_PATH = "~/.local/state/nowframe/spotify_api_usage.csv"
+SPOTIFY_USAGE_LOG_FLUSH_SECONDS = 300
+
 SPOTIFY_REQUEST_TIMEOUT = 10
 ```
 
 `SPOTIFY_POLL_INTERVAL` is used while music is playing. The paused and idle settings progressively reduce API traffic when frequent updates are unnecessary. Progress is calculated locally between requests.
 
 The default 5-second playing interval is recommended. Reducing it increases Spotify API traffic and can exhaust Spotify Development Mode quotas. Increasing it delays track and playback-state changes, while the progress bar remains smooth because it is calculated locally.
+
+When device filtering is enabled, NowFrame displays music only when Spotify reports an approved playback-device name. Unapproved devices show the clock and use the separate polling interval. Private installations can set the filter with `NOWFRAME_SPOTIFY_DEVICE_FILTER_ENABLED` and `NOWFRAME_ALLOWED_SPOTIFY_DEVICES` in the environment file instead of editing public configuration.
+
+When playback moves to a different device, NowFrame records its exact name and approval status in the service journal. Use `journalctl -u nowframe.service -n 50 --no-pager` to find the name, then copy it exactly into the approved-device setting.
+
+The usage tracker stores daily API request totals, failures, playback states, quota events, and the latest cooldown in a persistent CSV outside the repository. Statistics are flushed periodically to reduce storage writes.
 
 `SPOTIFY_REQUEST_TIMEOUT` applies to network downloads such as album artwork and Spotify Codes.
 

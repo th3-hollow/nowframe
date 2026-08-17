@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Status{% endblock %}
+{% block content %}
+<section>
+<h2>Service health</h2>
+<span class="help">
+Shows whether the display, web panel, and nowframe.local discovery
+services are running.
+</span>
+<div class="grid">
+{% for label, state in (
+    ("NowFrame display", nowframe_state),
+    ("Control panel", panel_state),
+    ("nowframe.local", avahi_state)
+) %}
+<div class="card">
+{{ label }}
+<strong class="{{ 'good' if state == 'active' else 'bad' }}">
+{{ state }}
+</strong>
+</div>
+{% endfor %}
+</div>
+</section>
+
+<section>
+<h2>Spotify API usage today</h2>
+<span class="help">
+Statistics come from NowFrame's existing usage log and may lag by up
+to five minutes. Average/hour is today's total divided by the time
+elapsed today.
+</span>
+<div class="grid">
+<div class="card">Requests<strong>{{ usage.total }}</strong></div>
+<div class="card">Average/hour<strong>{{ "%.1f"|format(usage.requests_per_hour) }}</strong></div>
+<div class="card">Successful<strong>{{ usage.successful }}</strong></div>
+<div class="card">Failed/network<strong>{{ usage.failed }}</strong></div>
+<div class="card">Rate limits (429)<strong class="{{ 'good' if usage.rate_limits == 0 else 'bad' }}">{{ usage.rate_limits }}</strong></div>
+<div class="card">Quota events<strong>{{ usage.quota_events }}</strong></div>
+<div class="card">Playing<strong>{{ usage.playing }}</strong></div>
+<div class="card">Paused<strong>{{ usage.paused }}</strong></div>
+<div class="card">Idle<strong>{{ usage.idle }}</strong></div>
+<div class="card">Blocked device<strong>{{ usage.unapproved }}</strong></div>
+</div>
+</section>
+
+<section>
+<h2>Last seven recorded days</h2>
+<span class="help">
+Compare polling profiles here and watch for failed requests or
+Spotify rate limits.
+</span>
+<div style="overflow-x:auto">
+<table>
+<tr>
+<th>Date</th><th>Total</th><th>Failed</th><th>429</th>
+<th>Playing</th><th>Idle</th>
+</tr>
+{% for row in usage.history %}
+<tr>
+<td>{{ row.date }}</td>
+<td>{{ row.total_requests }}</td>
+<td>{{ row.failed_requests }}</td>
+<td>{{ row.rate_limit_events }}</td>
+<td>{{ row.playing_responses }}</td>
+<td>{{ row.idle_responses }}</td>
+</tr>
+{% else %}
+<tr><td colspan="6">No usage history is available yet.</td></tr>
+{% endfor %}
+</table>
+</div>
+</section>
+{% endblock %}

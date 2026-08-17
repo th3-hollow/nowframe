@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Plugins{% endblock %}
+{% block content %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<section>
+<h2>Spotify Code</h2>
+
+<label class="check">
+<input type="checkbox" name="spotify_code_enabled"
+{% if spotify_code_enabled %}checked{% endif %}>
+<span>
+Show Spotify Code
+<span class="help">
+Displays a scannable Spotify Code for supported Spotify tracks.
+Disabling it removes the code and avoids its download/cache work.
+Local computer tracks use spotify:local URIs, which Spotify cannot
+convert into codes, so NowFrame skips them automatically.
+</span>
+</span>
+</label>
+</section>
+
+<section>
+<h2>Future plugins</h2>
+<span class="help">
+Additional NowFrame plugins can place their controls here without
+crowding device, display, background, or polling settings.
+</span>
+<p>No other configurable plugins are currently installed.</p>
+</section>
+
+<button type="submit" class="save">
+Save plugin settings and restart NowFrame
+</button>
+</form>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Background{% endblock %}
+{% block content %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<section>
+<h2>Album background</h2>
+
+<label>
+Background profile
+<select name="background_profile">
+{% for value, label in (
+    ("current", "Current smooth"),
+    ("vivid", "Vivid"),
+    ("soft", "Soft"),
+    ("dark", "Dark")
+) %}
+<option value="{{ value }}"
+{% if settings.NOWFRAME_BACKGROUND_PROFILE == value %}selected{% endif %}>
+{{ label }}
+</option>
+{% endfor %}
+</select>
+
+<span class="help">
+Current preserves NowFrame's original appearance. Vivid increases
+colour and brightness. Soft uses heavier blur and gentler colour.
+Dark lowers background brightness for dim rooms. The selected style
+is applied when artwork is rendered again.
+</span>
+</label>
+
+<label class="check">
+<input type="checkbox" name="glow_enabled"
+{% if glow_enabled %}checked{% endif %}>
+<span>
+Album-art glow
+<span class="help">
+Adds a coloured glow around the album cover using a colour selected
+from the artwork. Disabling it gives a flatter appearance and
+slightly reduces rendering work.
+</span>
+</span>
+</label>
+</section>
+
+<button type="submit" class="save">
+Save background settings and restart NowFrame
+</button>
+</form>
+{% endblock %}
