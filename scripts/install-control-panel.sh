@@ -27,17 +27,36 @@ settings_dir="${NOWFRAME_SETTINGS_DIR:-/etc/nowframe}"
 service_user="${NOWFRAME_CONTROL_USER:-nowframe-control}"
 service_group="$service_user"
 
-spotify_env_source="${NOWFRAME_SPOTIFY_ENV_SOURCE:-/root/.nowframe_env}"
-spotify_cache_source="${NOWFRAME_SPOTIFY_CACHE_SOURCE:-/root/.nowframe_spotify_cache}"
+if [ -n "${NOWFRAME_SPOTIFY_ENV_SOURCE:-}" ]; then
+    spotify_env_source="$NOWFRAME_SPOTIFY_ENV_SOURCE"
+elif [ -f /etc/nowframe.env ]; then
+    spotify_env_source=/etc/nowframe.env
+else
+    spotify_env_source=/root/.nowframe_env
+fi
+
+if [ -n "${NOWFRAME_SPOTIFY_CACHE_SOURCE:-}" ]; then
+    spotify_cache_source="$NOWFRAME_SPOTIFY_CACHE_SOURCE"
+elif [ -f /var/lib/nowframe/.nowframe_spotify_cache ]; then
+    spotify_cache_source=/var/lib/nowframe/.nowframe_spotify_cache
+else
+    spotify_cache_source=/root/.nowframe_spotify_cache
+fi
+
 old_usage_source="${NOWFRAME_USAGE_SOURCE:-/root/.local/state/nowframe/spotify_api_usage.csv}"
 
 required_files="
+control_auth.py
 control_core.py
+control_oauth.py
 control_panel.py
+control_secrets.py
 control_server.py
+control_setup.py
 requirements-control.txt
 packaging/control.env.example
 packaging/systemd/nowframe-control.service
+packaging/systemd/nowframe-spotify.conf
 packaging/systemd/nowframe-usage.conf
 packaging/helpers/nowframe-control-helper
 packaging/sudoers/nowframe-control
@@ -49,16 +68,6 @@ for relative_path in $required_files; do
         exit 1
     fi
 done
-
-if [ ! -f "$spotify_env_source" ]; then
-    echo "Spotify environment file not found: $spotify_env_source" >&2
-    exit 1
-fi
-
-if [ ! -f "$spotify_cache_source" ]; then
-    echo "Spotify token cache not found: $spotify_cache_source" >&2
-    exit 1
-fi
 
 if ! getent passwd "$service_user" >/dev/null; then
     useradd \
@@ -82,9 +91,13 @@ install \
     -m 644 \
     -o root \
     -g root \
+    "$source_dir/control_auth.py" \
     "$source_dir/control_core.py" \
+    "$source_dir/control_oauth.py" \
     "$source_dir/control_panel.py" \
+    "$source_dir/control_secrets.py" \
     "$source_dir/control_server.py" \
+    "$source_dir/control_setup.py" \
     "$app_dir/"
 
 cp -a \
@@ -159,19 +172,37 @@ chmod 660 \
     "$settings_dir/control.env" \
     "$settings_dir/devices.json"
 
-install \
-    -m 640 \
-    -o root \
-    -g "$service_group" \
-    "$spotify_env_source" \
-    "$settings_dir/spotify.env"
+if [ ! -f "$settings_dir/spotify.env" ]; then
+    if [ -f "$spotify_env_source" ]; then
+        install \
+            -m 640 \
+            -o root \
+            -g "$service_group" \
+            "$spotify_env_source" \
+            "$settings_dir/spotify.env"
+    else
+        install \
+            -m 640 \
+            -o root \
+            -g "$service_group" \
+            /dev/null \
+            "$settings_dir/spotify.env"
+    fi
+fi
 
-install \
-    -m 600 \
-    -o "$service_user" \
-    -g "$service_group" \
-    "$spotify_cache_source" \
-    "$state_dir/spotify-cache"
+if [ \
+    ! -f "$state_dir/spotify-cache" \
+    ] && [ \
+    -f "$spotify_cache_source" \
+    ]
+then
+    install \
+        -m 600 \
+        -o "$service_user" \
+        -g "$service_group" \
+        "$spotify_cache_source" \
+        "$state_dir/spotify-cache"
+fi
 
 if [ ! -f "$usage_dir/spotify_api_usage.csv" ]; then
     if [ -f "$old_usage_source" ]; then
@@ -227,6 +258,13 @@ install \
     "$source_dir/packaging/systemd/nowframe-usage.conf" \
     /etc/systemd/system/nowframe.service.d/usage.conf
 
+install \
+    -m 644 \
+    -o root \
+    -g root \
+    "$source_dir/packaging/systemd/nowframe-spotify.conf" \
+    /etc/systemd/system/nowframe.service.d/spotify.conf
+
 systemd-analyze verify \
     /etc/systemd/system/nowframe-control.service
 
@@ -236,4 +274,4 @@ systemctl restart nowframe-control.service
 
 echo
 echo "NowFrame Control installed."
-echo "Open: http://nowframe.local:8080/status"
+echo "Open: http://nowframe.local:8080/setup"

@@ -15,6 +15,7 @@ href="{{ url_for('static', filename='style.css') }}">
 <p class="subtitle">Local settings and monitoring</p>
 </header>
 
+{% if not hide_navigation %}
 <nav class="tabs">
 <a href="{{ url_for('status') }}"
 class="{{ 'active' if page_name == 'status' else '' }}">Status</a>
@@ -28,7 +29,23 @@ class="{{ 'active' if page_name == 'background' else '' }}">Background</a>
 class="{{ 'active' if page_name == 'polling' else '' }}">Polling</a>
 <a href="{{ url_for('plugins') }}"
 class="{{ 'active' if page_name == 'plugins' else '' }}">Plugins</a>
+<a href="{{ url_for('setup_overview') }}"
+class="{{ 'active' if page_name == 'setup' else '' }}">Setup</a>
 </nav>
+
+{% if session.get("authenticated") %}
+<form method="post"
+action="{{ url_for('logout') }}"
+class="logout-form">
+<input type="hidden"
+name="csrf_token"
+value="{{ csrf_token }}">
+<button type="submit" class="secondary">
+Sign out
+</button>
+</form>
+{% endif %}
+{% endif %}
 
 {% if message %}
 <p class="message {{ 'error' if error else '' }}">

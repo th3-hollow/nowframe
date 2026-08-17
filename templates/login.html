@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<section>
+<h2>Administrator sign in</h2>
+
+<p class="help">
+Enter the NowFrame Control password. This protects display settings,
+Spotify device access, and private setup options from other people
+on the local network.
+</p>
+
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<label>
+Admin password
+<input
+    type="password"
+    name="password"
+    required
+    autocomplete="current-password"
+    autofocus>
+</label>
+
+<button type="submit" class="save">
+Sign in
+</button>
+</form>
+</section>
+{% endblock %}

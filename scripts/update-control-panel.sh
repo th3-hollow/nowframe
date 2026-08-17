@@ -45,9 +45,13 @@ install \
     -m 644 \
     -o root \
     -g root \
+    "$source_dir/control_auth.py" \
     "$source_dir/control_core.py" \
+    "$source_dir/control_oauth.py" \
     "$source_dir/control_panel.py" \
+    "$source_dir/control_secrets.py" \
     "$source_dir/control_server.py" \
+    "$source_dir/control_setup.py" \
     "$candidate/"
 
 cp -a \
@@ -79,6 +83,26 @@ NOWFRAME_CONTROL_RESTART=0 \
     "$candidate/control_core.py" \
     "$candidate/control_panel.py" \
     "$candidate/control_server.py"
+
+sh -n     "$source_dir/packaging/helpers/nowframe-control-helper"
+
+visudo -cf     "$source_dir/packaging/sudoers/nowframe-control"
+
+systemd-analyze verify     "$source_dir/packaging/systemd/nowframe-control.service"
+
+install     -m 750     -o root     -g root     "$source_dir/packaging/helpers/nowframe-control-helper"     /usr/local/sbin/nowframe-control-helper
+
+install     -m 440     -o root     -g root     "$source_dir/packaging/sudoers/nowframe-control"     /etc/sudoers.d/nowframe-control
+
+install     -m 644     -o root     -g root     "$source_dir/packaging/systemd/nowframe-control.service"     /etc/systemd/system/nowframe-control.service
+
+install -d     -m 755     -o root     -g root     /etc/systemd/system/nowframe.service.d
+
+install     -m 644     -o root     -g root     "$source_dir/packaging/systemd/nowframe-spotify.conf"     /etc/systemd/system/nowframe.service.d/spotify.conf
+
+install     -m 644     -o root     -g root     "$source_dir/packaging/systemd/nowframe-usage.conf"     /etc/systemd/system/nowframe.service.d/usage.conf
+
+systemctl daemon-reload
 
 if [ -d "$app_dir" ]; then
     mv "$app_dir" "$previous"

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Setup{% endblock %}
+{% block content %}
+<section>
+<h2>First-run setup</h2>
+
+<p>
+Complete these steps to make NowFrame ready. Hardware and Spotify
+authorization checks update automatically when this page reloads.
+</p>
+
+<div class="stats">
+<div>
+<span>Admin password</span>
+<strong class="good">Configured</strong>
+</div>
+
+<div>
+<span>Spotify credentials</span>
+<strong class="{{ 'good' if summary.credentials_configured else 'bad' }}">
+{{ "Configured" if summary.credentials_configured else "Required" }}
+</strong>
+</div>
+
+<div>
+<span>Spotify authorization</span>
+<strong class="{{ 'good' if summary.spotify_authorized else 'bad' }}">
+{{ "Connected" if summary.spotify_authorized else "Required" }}
+</strong>
+</div>
+
+<div>
+<span>Display hardware</span>
+<strong class="{{ 'good' if summary.hardware.ready else 'bad' }}">
+{{ "Ready" if summary.hardware.ready else "Needs attention" }}
+</strong>
+</div>
+</div>
+
+<p class="help">
+Control panel address: {{ summary.panel_url }}
+</p>
+
+<a class="button-link"
+href="{{ url_for('setup_security') }}">
+Change admin password
+</a>
+</section>
+
+<section>
+<h2>1. Spotify application credentials</h2>
+
+<p>
+Enter the Client ID, Client Secret, and exact redirect URI from
+your Spotify Developer application.
+</p>
+
+<a class="button-link" href="{{ url_for('setup_spotify') }}">
+Configure Spotify credentials
+</a>
+</section>
+
+<section>
+<h2>2. Authorize Spotify</h2>
+
+{% if summary.spotify_authorized %}
+<p class="message">
+Spotify authorization is complete.
+</p>
+{% elif summary.credentials_configured %}
+<p>
+Credentials are saved. Spotify authorization is still required
+before NowFrame can read playback or discover devices.
+</p>
+{% else %}
+<p class="help">
+Save Spotify credentials before authorization.
+</p>
+{% endif %}
+</section>
+
+<section>
+<h2>3. Display hardware</h2>
+
+<dl>
+<dt>Framebuffer</dt>
+<dd>{{ summary.hardware.device }}</dd>
+
+<dt>Detected resolution</dt>
+<dd>
+{% if summary.hardware.resolution_detected %}
+{{ summary.hardware.width }} × {{ summary.hardware.height }}
+{% else %}
+Not detected
+{% endif %}
+</dd>
+
+<dt>Pixel depth</dt>
+<dd>
+{% if summary.hardware.bits_per_pixel %}
+{{ summary.hardware.bits_per_pixel }}-bit
+{% else %}
+Not detected
+{% endif %}
+</dd>
+</dl>
+
+{% if summary.hardware.ready %}
+<p class="message">
+The framebuffer is available and reports 16-bit RGB565.
+</p>
+{% else %}
+<p class="message error">
+NowFrame needs an available framebuffer using 16-bit RGB565.
+Review the display configuration before finishing setup.
+</p>
+{% endif %}
+</section>
+
+<section>
+<h2>4. Choose visible Spotify devices</h2>
+
+<p>
+After Spotify is authorized, open Devices and refresh discovery.
+Select which playback devices NowFrame is allowed to display.
+</p>
+
+<a class="button-link" href="{{ url_for('devices') }}">
+Open device settings
+</a>
+</section>
+
+<section>
+<h2>5. Personalize NowFrame</h2>
+
+<p>
+The tested defaults are already selected. Display, Background,
+Polling, and Plugins contain explanations beside every option.
+</p>
+
+<div class="setup-links">
+<a class="button-link" href="{{ url_for('display') }}">Display</a>
+<a class="button-link" href="{{ url_for('background') }}">Background</a>
+<a class="button-link" href="{{ url_for('polling') }}">Polling</a>
+<a class="button-link" href="{{ url_for('plugins') }}">Plugins</a>
+</div>
+</section>
+
+{% if summary.ready %}
+<section>
+<h2>Setup complete</h2>
+<p class="message">
+NowFrame has credentials, Spotify authorization, and compatible
+display hardware.
+</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -3,6 +3,17 @@ set -eu
 
 action="${1:-}"
 
+if [ -x /opt/nowframe/.venv/bin/python ]; then
+    nowframe_app_dir=/opt/nowframe
+    nowframe_python=/opt/nowframe/.venv/bin/python
+elif [ -x /root/spotify-display/spotify-env/bin/python ]; then
+    nowframe_app_dir=/root/spotify-display/nowframe
+    nowframe_python=/root/spotify-display/spotify-env/bin/python
+else
+    echo "NowFrame Python environment was not found" >&2
+    exit 1
+fi
+
 case "$action" in
     validate)
         pending="/etc/nowframe/.control.env.pending"
@@ -13,7 +24,19 @@ case "$action" in
         fi
 
         set -a
-        . /root/.nowframe_env
+
+        if [ -f /root/.nowframe_env ]; then
+            . /root/.nowframe_env
+        fi
+
+        if [ -f /etc/nowframe.env ]; then
+            . /etc/nowframe.env
+        fi
+
+        if [ -f /etc/nowframe/spotify.env ]; then
+            . /etc/nowframe/spotify.env
+        fi
+
         . "$pending"
         set +a
 
@@ -25,6 +48,65 @@ case "$action" in
         exec \
             /root/spotify-display/spotify-env/bin/python \
             -c 'import config'
+        ;;
+
+    configure-spotify)
+        pending="/etc/nowframe/.spotify.env.pending"
+        target="/etc/nowframe/spotify.env"
+
+        if [ ! -f "$pending" ]; then
+            echo "Pending Spotify settings are missing" >&2
+            exit 1
+        fi
+
+        if [ "$(stat -c %U "$pending")" != "nowframe-control" ]; then
+            echo "Pending Spotify settings have the wrong owner" >&2
+            exit 1
+        fi
+
+        if [ "$(stat -c %a "$pending")" != "600" ]; then
+            echo "Pending Spotify settings must use mode 600" >&2
+            exit 1
+        fi
+
+        if [ "$(wc -l <"$pending")" -ne 3 ]; then
+            echo "Pending Spotify settings have invalid fields" >&2
+            exit 1
+        fi
+
+        if ! grep -Eq \
+            '^SPOTIPY_CLIENT_ID=[A-Za-z0-9._-]{10,256}$' \
+            "$pending"
+        then
+            echo "Spotify Client ID is invalid" >&2
+            exit 1
+        fi
+
+        if ! grep -Eq \
+            '^SPOTIPY_CLIENT_SECRET=[A-Za-z0-9._-]{10,256}$' \
+            "$pending"
+        then
+            echo "Spotify Client Secret is invalid" >&2
+            exit 1
+        fi
+
+        if ! grep -Eq \
+            '^SPOTIPY_REDIRECT_URI=https?://[A-Za-z0-9._:/-]{1,480}$' \
+            "$pending"
+        then
+            echo "Spotify redirect URI is invalid" >&2
+            exit 1
+        fi
+
+        install \
+            -m 640 \
+            -o root \
+            -g nowframe-control \
+            "$pending" \
+            "$target"
+
+        rm -f "$pending"
+        exit 0
         ;;
 
     restart)
@@ -57,7 +139,7 @@ case "$action" in
         ;;
 
     *)
-        echo "Usage: $0 validate|restart" >&2
+        echo "Usage: $0 validate|configure-spotify|restart" >&2
         exit 2
         ;;
 esac

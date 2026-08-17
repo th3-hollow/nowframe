@@ -22,6 +22,7 @@ Environment=NOWFRAME_SPOTIFY_CACHE_PATH=/var/lib/nowframe-control/spotify-cache
 
 Environment="NOWFRAME_VALIDATE_COMMAND=/usr/bin/sudo -n /usr/local/sbin/nowframe-control-helper validate"
 Environment="NOWFRAME_RESTART_COMMAND=/usr/bin/sudo -n /usr/local/sbin/nowframe-control-helper restart"
+Environment="NOWFRAME_CONFIGURE_SPOTIFY_COMMAND=/usr/bin/sudo -n /usr/local/sbin/nowframe-control-helper configure-spotify"
 
 Environment=NOWFRAME_CONTROL_HOST=0.0.0.0
 Environment=NOWFRAME_CONTROL_PORT=8080

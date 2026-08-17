@@ -69,11 +69,32 @@ sudo /opt/nowframe/scripts/install.sh
 
 The installer creates a dedicated service account, virtual environment, environment file, and systemd service.
 
-## Spotify setup
+## Web-based setup
 
-Create an application in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+Install the optional local control panel:
 
-Add this exact redirect URI:
+```bash
+sudo /opt/nowframe/scripts/install-control-panel.sh
+```
+
+Open:
+
+```text
+http://nowframe.local:8080/setup
+```
+
+The first-run wizard guides you through:
+
+1. Creating the control-panel admin password.
+2. Entering the Spotify Client ID and Client Secret.
+3. Confirming the exact Spotify redirect URI.
+4. Authorizing the Spotify account.
+5. Checking the framebuffer and RGB565 compatibility.
+6. Discovering and approving Spotify Connect devices.
+7. Choosing display, polling, and plugin settings.
+
+Create an application in the Spotify Developer Dashboard
+and add this exact redirect URI:
 
 ```text
 http://127.0.0.1:8888/callback
@@ -81,37 +102,12 @@ http://127.0.0.1:8888/callback
 
 Use `127.0.0.1`, not `localhost`.
 
-Edit the private environment file:
+When authorizing from another device, the final loopback
+page may not load. Copy its complete URL, return to Setup,
+and paste it into the authorization field.
 
-```bash
-sudo nano /etc/nowframe.env
-```
-
-Set:
-
-```text
-SPOTIPY_CLIENT_ID=your_spotify_client_id
-SPOTIPY_CLIENT_SECRET=your_spotify_client_secret
-SPOTIPY_REDIRECT_URI=http://127.0.0.1:8888/callback
-```
-
-Authorize Spotify:
-
-```bash
-sudo runuser -u nowframe -- sh -c '
-    set -a
-    . /etc/nowframe.env
-    set +a
-    cd /opt/nowframe
-    HOME=/var/lib/nowframe \
-        .venv/bin/python \
-        scripts/authorize_spotify.py
-'
-```
-
-Open the displayed Spotify authorization URL and approve access.
-
-If the browser cannot open the final `127.0.0.1` page, copy the complete URL from its address bar and paste it into the terminal prompt.
+Credentials, password hashes, and tokens remain in
+protected files on the Pi and are never written to Git.
 
 ## Start NowFrame
 

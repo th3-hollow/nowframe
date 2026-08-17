@@ -54,9 +54,11 @@ if [ "${PURGE:-0}" = "1" ]; then
         "$usage_dir"
 
     rm -f \
+        "$settings_dir/auth.json" \
         "$settings_dir/control.env" \
         "$settings_dir/devices.json" \
-        "$settings_dir/spotify.env"
+        "$settings_dir/spotify.env" \
+        /etc/systemd/system/nowframe.service.d/spotify.conf
 
     rmdir \
         "$settings_dir" \
@@ -66,6 +68,8 @@ if [ "${PURGE:-0}" = "1" ]; then
     if getent passwd "$service_user" >/dev/null; then
         userdel "$service_user"
     fi
+
+    systemctl daemon-reload
 
     echo "NowFrame Control and its saved data were removed."
 else

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Security{% endblock %}
+{% block content %}
+<section>
+<h2>Control-panel security</h2>
+
+<p>
+Change the administrator password used to protect NowFrame Control.
+</p>
+
+<p class="help">
+The current password is required. The new password must contain at
+least 10 characters. Passwords are never displayed or stored as
+plain text.
+</p>
+
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<label>
+Current password
+<input
+    type="password"
+    name="current_password"
+    required
+    autocomplete="current-password">
+</label>
+
+<label>
+New password
+<input
+    type="password"
+    name="new_password"
+    required
+    minlength="10"
+    autocomplete="new-password">
+</label>
+
+<label>
+Confirm new password
+<input
+    type="password"
+    name="new_password_confirm"
+    required
+    minlength="10"
+    autocomplete="new-password">
+</label>
+
+<button type="submit" class="save">
+Change admin password
+</button>
+</form>
+</section>
+{% endblock %}

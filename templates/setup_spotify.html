@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Spotify setup{% endblock %}
+{% block content %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<section>
+<h2>Spotify application</h2>
+
+<p>
+NowFrame needs a Spotify Developer application to read the
+currently playing track and discover Spotify Connect devices.
+</p>
+
+<p class="help">
+Open the Spotify Developer Dashboard, create an application,
+and add the redirect URI shown below to that application.
+Then copy its Client ID and Client Secret into this page.
+</p>
+
+{% if spotify.configured %}
+<p class="message">
+Spotify credentials are configured.
+Client ID: {{ spotify.client_id_hint }}
+</p>
+{% endif %}
+
+<label>
+Spotify Client ID
+<input
+    type="password"
+    name="client_id"
+    autocomplete="off"
+    {% if not spotify.configured %}required{% endif %}
+    placeholder="{% if spotify.client_id_hint %}Leave blank to keep {{ spotify.client_id_hint }}{% else %}Paste the Client ID{% endif %}">
+
+<span class="help">
+The Client ID identifies your Spotify application. When updating
+an existing setup, leave this blank to keep the saved value.
+</span>
+</label>
+
+<label>
+Spotify Client Secret
+<input
+    type="password"
+    name="client_secret"
+    autocomplete="new-password"
+    {% if not spotify.secret_configured %}required{% endif %}
+    placeholder="{% if spotify.secret_configured %}Leave blank to keep the saved secret{% else %}Paste the Client Secret{% endif %}">
+
+<span class="help">
+The Client Secret is private. NowFrame stores it in a protected
+system file and never displays it again.
+</span>
+</label>
+
+<label>
+Spotify redirect URI
+<input
+    type="url"
+    name="redirect_uri"
+    required
+    value="{{ spotify.redirect_uri or default_redirect_uri }}">
+
+<span class="help">
+This must exactly match a redirect URI saved in the Spotify
+Developer Dashboard. The recommended value is
+{{ default_redirect_uri }}.
+</span>
+</label>
+</section>
+
+<button type="submit" class="save">
+Save Spotify credentials
+</button>
+</form>
+
+<section>
+<h2>Spotify authorization</h2>
+
+{% if authorization.authorized %}
+<p class="message">
+Spotify is connected. You can authorize again if you change
+accounts or replace the Spotify application credentials.
+</p>
+{% else %}
+<p>
+After saving the credentials, approve NowFrame in Spotify.
+</p>
+{% endif %}
+
+<p class="help">
+Spotify redirects to 127.0.0.1 after approval. When authorizing
+from a phone or another computer, that final page may not load.
+This is expected: copy the complete URL from the browser address
+bar, return here, and paste it below.
+</p>
+
+<form method="post"
+action="{{ url_for('start_spotify_authorization') }}">
+<input type="hidden"
+name="csrf_token"
+value="{{ csrf_token }}">
+
+<button type="submit" class="secondary">
+{{ "Reconnect Spotify" if authorization.authorized else "Connect Spotify" }}
+</button>
+</form>
+
+<form method="post"
+action="{{ url_for('complete_spotify_authorization') }}">
+
+<input type="hidden"
+name="csrf_token"
+value="{{ csrf_token }}">
+
+<label>
+Final Spotify callback URL
+<input
+    type="url"
+    name="callback_url"
+    required
+    autocomplete="off"
+    placeholder="http://127.0.0.1:8888/callback?code=...&state=...">
+
+<span class="help">
+Paste the entire address, including its code and state parameters.
+NowFrame exchanges it for a private token and never stores the
+callback URL.
+</span>
+</label>
+
+<button type="submit" class="save">
+Complete Spotify authorization
+</button>
+</form>
+</section>
+{% endblock %}

@@ -6,7 +6,26 @@ on the same trusted network.
 
 Default address: http://nowframe.local:8080
 
+## First-run setup
+
+Open `http://nowframe.local:8080/setup`.
+
+A new installation first asks for an administrator password of
+at least 10 characters. Setup then checks Spotify credentials,
+Spotify authorization, framebuffer availability, resolution,
+16-bit RGB565 compatibility, device selection, and recommended
+defaults.
+
+The Client Secret and Spotify tokens are never displayed after
+saving. Leave an existing credential field blank to retain it.
+
 ## Pages
+
+### Setup
+
+Shows readiness and detected hardware, links to every recommended
+configuration page, and allows the admin password to be changed.
+Changing the password invalidates older signed-in sessions.
 
 ### Status
 
@@ -49,9 +68,11 @@ skip Spotify Code generation.
 
 ## Storage
 
+- Password hash: /etc/nowframe/auth.json
 - Settings: /etc/nowframe/control.env
 - Device history: /etc/nowframe/devices.json
 - Private credentials: /etc/nowframe/spotify.env
+- Private session key: /var/lib/nowframe-control/session.key
 - Token cache: /var/lib/nowframe-control/spotify-cache
 - Usage statistics: /var/lib/nowframe/spotify_api_usage.csv
 

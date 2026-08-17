@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}First-time setup{% endblock %}
+{% block content %}
+<section>
+<h2>Welcome to NowFrame</h2>
+
+<p>
+Create an administrator password before configuring NowFrame.
+</p>
+
+<p class="help">
+This password protects the local control panel. Use at least
+10 characters. It is stored as a one-way hash and cannot be
+read back from the Pi.
+</p>
+
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+<label>
+Admin password
+<input
+    type="password"
+    name="password"
+    required
+    minlength="10"
+    autocomplete="new-password"
+    autofocus>
+</label>
+
+<label>
+Confirm admin password
+<input
+    type="password"
+    name="password_confirm"
+    required
+    minlength="10"
+    autocomplete="new-password">
+</label>
+
+<button type="submit" class="save">
+Create password and continue
+</button>
+</form>
+</section>
+{% endblock %}
