@@ -21,6 +21,7 @@ from config import (
     SPOTIFY_USAGE_LOG_PATH,
     SPOTIFY_USAGE_LOG_FLUSH_SECONDS,
     SPOTIFY_REQUEST_TIMEOUT,
+    SPOTIFY_ALBUM_TIMEOUT,
     RUNTIME_CACHE_DIR,
     ALBUM_CACHE_PATH
 )
@@ -170,6 +171,7 @@ class SpotifyPlugin:
         )
 
         self.last_image = None
+        self.album_revision = 0
         self.last_track = None
         self.last_device_name = None
 
@@ -215,7 +217,7 @@ class SpotifyPlugin:
     def download_album(self, url):
 
         if url == self.last_image:
-            return
+            return True
 
         temp_path = (
             ALBUM_CACHE_PATH
@@ -227,7 +229,7 @@ class SpotifyPlugin:
 
             response = requests.get(
                 url,
-                timeout=SPOTIFY_REQUEST_TIMEOUT
+                timeout=SPOTIFY_ALBUM_TIMEOUT
             )
 
             response.raise_for_status()
@@ -253,8 +255,10 @@ class SpotifyPlugin:
             )
 
             self.last_image = url
+            self.album_revision += 1
 
             print("Album art updated")
+            return True
 
         except Exception as e:
 
@@ -507,9 +511,11 @@ class SpotifyPlugin:
         )
 
 
+        album_ready = False
+
         if image_url and device_allowed:
 
-            self.download_album(
+            album_ready = self.download_album(
                 image_url
             )
 
@@ -567,6 +573,8 @@ class SpotifyPlugin:
             "album": track["album"]["name"],
 
             "album_url": image_url,
+            "album_ready": bool(album_ready),
+            "album_revision": self.album_revision,
 
             # Spotify Code uses this
             "uri": track["uri"],
@@ -601,7 +609,7 @@ class SpotifyPlugin:
         return self.idle_poll_interval
 
 
-    def get_data(self):
+    def refresh_if_due(self):
 
         now = time.monotonic()
 
@@ -621,6 +629,10 @@ class SpotifyPlugin:
             self.poll_spotify()
 
             self.last_poll = now
+
+    def get_cached_data(self):
+
+        now = time.monotonic()
 
 
         if self.cached_data is None:
@@ -665,3 +677,9 @@ class SpotifyPlugin:
 
 
         return data
+
+
+    def get_data(self):
+
+        self.refresh_if_due()
+        return self.get_cached_data()

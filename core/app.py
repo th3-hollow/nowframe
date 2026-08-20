@@ -1,5 +1,6 @@
 import os
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from core.state import DisplayState
 from core.plugins import PluginManager
@@ -54,6 +55,10 @@ class NowFrameApp:
         self.clock = ClockPlugin()
         self.spotify = SpotifyPlugin()
 
+        self.spotify_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="spotify")
+        self.spotify_future = None
+        self.next_spotify_refresh_check = 0.0
+
         self.plugins.register(
             self.clock
         )
@@ -91,6 +96,7 @@ class NowFrameApp:
 
         self.last_mode = None
         self.last_track_key = None
+        self.last_artwork_revision = None
         self.last_clock_text = None
 
 
@@ -108,6 +114,25 @@ class NowFrameApp:
         self.away_mode = environment_enabled(
             "NOWFRAME_AWAY_MODE"
         )
+
+
+    def _refresh_spotify_async(self):
+
+        now = time.monotonic()
+
+        if self.spotify_future is not None and self.spotify_future.done():
+            try:
+                self.spotify_future.result()
+            except Exception as error:
+                print("Spotify background refresh error:", error)
+
+            self.spotify_future = None
+
+        if self.spotify_future is None and now >= self.next_spotify_refresh_check:
+            self.spotify_future = self.spotify_executor.submit(
+                self.spotify.refresh_if_due
+            )
+            self.next_spotify_refresh_check = now + 0.25
 
 
     def create_update(self):
@@ -132,8 +157,10 @@ class NowFrameApp:
                 "transition": "mode"
             }
 
+        self._refresh_spotify_async()
+
         spotify_data = (
-            self.spotify.get_data()
+            self.spotify.get_cached_data()
         )
 
         now = time.monotonic()
@@ -159,6 +186,11 @@ class NowFrameApp:
                     "uri"
                 )
             )
+            artwork_revision = spotify_data.get(
+                "album_revision",
+                0
+            )
+
 
 
             was_playing = (
@@ -197,8 +229,16 @@ class NowFrameApp:
             )
 
 
+            artwork_changed = (
+                artwork_revision
+                !=
+                self.last_artwork_revision
+            )
+
             full_update = (
                 mode_changed
+                or
+                artwork_changed
                 or
                 track_key
                 !=
@@ -216,6 +256,8 @@ class NowFrameApp:
 
 
             # ---------------------------------
+            self.last_artwork_revision = artwork_revision
+
             # Fast progress-only update
             # ---------------------------------
 
@@ -265,13 +307,14 @@ class NowFrameApp:
                 "premium"
             ):
 
-                spotify_code_path = (
-                    self.spotify_code.get_code(
-                        spotify_data.get(
-                            "uri"
+                spotify_code_path = None
+
+                if spotify_data.get("album_ready", True):
+                    spotify_code_path = (
+                        self.spotify_code.get_code(
+                            spotify_data.get("uri")
                         )
                     )
-                )
 
                 frame = (
                     self.renderer.render(

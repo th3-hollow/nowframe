@@ -137,6 +137,8 @@ SPOTIFY_USAGE_LOG_FLUSH_SECONDS = 300
 # Network timeout when downloading album artwork.
 
 SPOTIFY_REQUEST_TIMEOUT = 10
+SPOTIFY_ALBUM_TIMEOUT = (3, 6)
+SPOTIFY_CODE_TIMEOUT = (2, 3)
 
 # Runtime cache directory.
 # Temporary artwork and other generated Spotify

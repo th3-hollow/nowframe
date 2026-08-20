@@ -9,7 +9,7 @@ from config import (
     RUNTIME_CACHE_DIR,
     SPOTIFY_CODE_WIDTH,
     SPOTIFY_CODE_CACHE_LIMIT,
-    SPOTIFY_REQUEST_TIMEOUT
+    SPOTIFY_CODE_TIMEOUT
 )
 
 
@@ -210,7 +210,7 @@ class SpotifyCodeGenerator:
 
             response = requests.get(
                 url,
-                timeout=SPOTIFY_REQUEST_TIMEOUT
+                timeout=SPOTIFY_CODE_TIMEOUT
             )
 
             response.raise_for_status()

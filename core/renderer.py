@@ -200,13 +200,15 @@ class Renderer:
         )
 
 
-        if album_url != self.last_album_url:
+        album_key = (album_url, data.get("album_revision", 0))
+
+        if album_key != self.last_album_url:
 
             print(
                 "Updating album background"
             )
 
-            self.last_album_url = album_url
+            self.last_album_url = album_key
 
             self.update_album_cache()
 
